@@ -1,9 +1,9 @@
-import ffi from 'ffi-napi';
+import ffi from '@openim/ffi-napi';
 import { v4 as uuidV4 } from 'uuid';
 import type { LibOpenIMSDK } from 'libOpenIMSDK';
 import { UserModuleApi, setupUserModule } from './modules/user';
 import { InitConfig, LoginParams } from '@/types/params';
-import { BaseResponse, SelfUserInfo } from '@/types/entity';
+import { BaseResponse, SelfUserInfo, EmitProxy } from '@/types/entity';
 import { ErrorCode } from '@/constant/api';
 import { LoginStatus } from '@/types/enum';
 import { NativeEvent, eventMapping } from '@/constant/callback';
@@ -16,15 +16,9 @@ import {
 } from './modules/conversation';
 import { type MessageModuleApi, setupMessageModule } from './modules/message';
 
-const CB_I_S = ffi.Function('void', ['int', 'string']);
-const CB_S_I_S_S = ffi.Function('void', ['string', 'int', 'string', 'string']);
-const CB_S_I_S_S_I = ffi.Function('void', [
-  'string',
-  'int',
-  'string',
-  'string',
-  'int',
-]);
+function isObject(value: unknown) {
+  return Object.prototype.toString.call(value) === '[object Object]';
+}
 
 class OpenIMSDK
   extends Emitter
@@ -38,21 +32,22 @@ class OpenIMSDK
   libOpenIMSDK: LibOpenIMSDK;
   listenerCallback: Buffer;
 
-  constructor(libPath: string) {
+  constructor(libPath: string, emitProxy?: EmitProxy) {
     super();
     this.libOpenIMSDK = ffi.Library(libPath, {
-      set_group_listener: ['void', [CB_I_S]],
-      set_conversation_listener: ['void', [CB_I_S]],
-      set_advanced_msg_listener: ['void', [CB_I_S]],
-      set_batch_msg_listener: ['void', [CB_I_S]],
-      set_user_listener: ['void', [CB_I_S]],
-      set_friend_listener: ['void', [CB_I_S]],
-      set_custom_business_listener: ['void', [CB_I_S]],
-      init_sdk: ['uint8', [CB_I_S, 'string', 'string']],
+      set_group_listener: ['void', ['pointer']],
+      set_conversation_listener: ['void', ['pointer']],
+      set_advanced_msg_listener: ['void', ['pointer']],
+      set_batch_msg_listener: ['void', ['pointer']],
+      set_user_listener: ['void', ['pointer']],
+      set_friend_listener: ['void', ['pointer']],
+      set_custom_business_listener: ['void', ['pointer']],
+      init_sdk: ['uint8', ['pointer', 'string', 'string']],
       un_init_sdk: ['void', ['string']],
-      login: ['void', [CB_S_I_S_S, 'string', 'string', 'string']],
-      logout: ['void', [CB_S_I_S_S, 'string']],
-      network_status_changed: ['void', [CB_S_I_S_S, 'string']],
+      login: ['void', ['pointer', 'string', 'string', 'string']],
+      logout: ['void', ['pointer', 'string']],
+      set_app_background_status: ['void', ['pointer', 'string', 'int']],
+      network_status_changed: ['void', ['pointer', 'string']],
       get_login_status: ['int', ['string']],
       get_login_user: ['string', []],
       create_text_message: ['string', ['string', 'string']],
@@ -91,7 +86,7 @@ class OpenIMSDK
       create_image_message: ['string', ['string', 'string']],
       create_image_message_by_url: [
         'string',
-        ['string', 'string', 'string', 'string'],
+        ['string', 'string', 'string', 'string', 'string'],
       ],
       create_sound_message_by_url: ['string', ['string', 'string']],
       create_sound_message: ['string', ['string', 'string', 'long long']],
@@ -108,93 +103,178 @@ class OpenIMSDK
       ],
       create_face_message: ['string', ['string', 'int', 'string']],
       create_forward_message: ['string', ['string', 'string']],
-      get_all_conversation_list: ['void', [CB_S_I_S_S, 'string']],
-      get_advanced_history_message_list: [
+      get_all_conversation_list: ['void', ['pointer', 'string']],
+      get_conversation_list_split: [
         'void',
-        [CB_S_I_S_S, 'string', 'string'],
+        ['pointer', 'string', 'int', 'int'],
+      ],
+      get_one_conversation: ['void', ['pointer', 'string', 'int', 'string']],
+      get_multiple_conversation: ['void', ['pointer', 'string', 'string']],
+      set_conversation_msg_destruct_time: [
+        'void',
+        ['pointer', 'string', 'string', 'long long'],
+      ],
+      set_conversation_is_msg_destruct: [
+        'void',
+        ['pointer', 'string', 'string', 'int'],
+      ],
+      hide_conversation: ['void', ['pointer', 'string', 'string']],
+      get_conversation_recv_message_opt: [
+        'void',
+        ['pointer', 'string', 'string'],
+      ],
+      set_conversation_draft: [
+        'void',
+        ['pointer', 'string', 'string', 'string'],
+      ],
+      reset_conversation_group_at_type: [
+        'void',
+        ['pointer', 'string', 'string'],
+      ],
+      pin_conversation: ['void', ['pointer', 'string', 'string', 'int']],
+      set_conversation_private_chat: [
+        'void',
+        ['pointer', 'string', 'string', 'int'],
+      ],
+      set_conversation_burn_duration: [
+        'void',
+        ['pointer', 'string', 'string', 'int'],
+      ],
+      set_conversation_recv_message_opt: [
+        'void',
+        ['pointer', 'string', 'string', 'int'],
+      ],
+      get_total_unread_msg_count: ['void', ['pointer', 'string']],
+      get_at_all_tag: ['string', ['string']],
+      get_conversation_id_by_session_type: [
+        'string',
+        ['string', 'string', 'int'],
       ],
       send_message: [
         'void',
-        [CB_S_I_S_S_I, 'string', 'string', 'string', 'string', 'string'],
+        ['pointer', 'string', 'string', 'string', 'string', 'string'],
       ],
-
-      // User related functions
-      get_users_info: ['void', [CB_S_I_S_S, 'string', 'string']],
-      get_users_info_from_srv: ['void', [CB_S_I_S_S, 'string', 'string']],
-      set_self_info: ['void', [CB_S_I_S_S, 'string', 'string']],
-      get_self_user_info: ['void', [CB_S_I_S_S, 'string']],
+      send_message_not_oss: [
+        'void',
+        ['pointer', 'string', 'string', 'string', 'string', 'string'],
+      ],
+      find_message_list: ['void', ['pointer', 'string', 'string']],
+      get_advanced_history_message_list: [
+        'void',
+        ['pointer', 'string', 'string'],
+      ],
+      get_advanced_history_message_list_reverse: [
+        'void',
+        ['pointer', 'string', 'string'],
+      ],
+      revoke_message: ['void', ['pointer', 'string', 'string', 'string']],
+      typing_status_update: ['void', ['pointer', 'string', 'string', 'string']],
+      mark_conversation_message_as_read: [
+        'void',
+        ['pointer', 'string', 'string'],
+      ],
+      delete_message_from_local_storage: [
+        'void',
+        ['pointer', 'string', 'string', 'string'],
+      ],
+      delete_message: ['void', ['pointer', 'string', 'string', 'string']],
+      hide_all_conversations: ['void', ['pointer', 'string']],
+      delete_all_msg_from_local_and_svr: ['void', ['pointer', 'string']],
+      delete_all_msg_from_local: ['void', ['pointer', 'string']],
+      clear_conversation_and_delete_all_msg: [
+        'void',
+        ['pointer', 'string', 'string'],
+      ],
+      delete_conversation_and_delete_all_msg: [
+        'void',
+        ['pointer', 'string', 'string'],
+      ],
+      insert_single_message_to_local_storage: [
+        'void',
+        ['pointer', 'string', 'string', 'string', 'string'],
+      ],
+      insert_group_message_to_local_storage: [
+        'void',
+        ['pointer', 'string', 'string', 'string', 'string'],
+      ],
+      search_local_messages: ['void', ['pointer', 'string', 'string']],
+      set_message_local_ex: [
+        'void',
+        ['pointer', 'string', 'string', 'string', 'string'],
+      ],
+      get_users_info: ['void', ['pointer', 'string', 'string']],
+      get_users_info_with_cache: [
+        'void',
+        ['pointer', 'string', 'string', 'string'],
+      ],
+      get_users_info_from_srv: ['void', ['pointer', 'string', 'string']],
+      set_self_info: ['void', ['pointer', 'string', 'string']],
+      set_global_recv_message_opt: ['void', ['pointer', 'string', 'int']],
+      get_self_user_info: ['void', ['pointer', 'string']],
       update_msg_sender_info: [
         'void',
-        [CB_S_I_S_S, 'string', 'string', 'string'],
+        ['pointer', 'string', 'string', 'string'],
       ],
-      subscribe_users_status: ['void', [CB_S_I_S_S, 'string', 'string']],
-      unsubscribe_users_status: ['void', [CB_S_I_S_S, 'string', 'string']],
-      get_subscribe_users_status: ['void', [CB_S_I_S_S, 'string']],
-      get_user_status: ['void', [CB_S_I_S_S, 'string', 'string']],
-
-      // Friend related functions
-      get_specified_friends_info: ['void', [CB_S_I_S_S, 'string', 'string']],
-      get_friend_list: ['void', [CB_S_I_S_S, 'string']],
-      get_friend_list_page: ['void', [CB_S_I_S_S, 'string', 'int', 'int']],
-      search_friends: ['void', [CB_S_I_S_S, 'string', 'string']],
-      check_friend: ['void', [CB_S_I_S_S, 'string', 'string']],
-      add_friend: ['void', [CB_S_I_S_S, 'string', 'string']],
-      set_friend_remark: ['void', [CB_S_I_S_S, 'string', 'string']],
-      delete_friend: ['void', [CB_S_I_S_S, 'string', 'string']],
-      get_friend_application_list_as_recipient: [
-        'void',
-        [CB_S_I_S_S, 'string'],
-      ],
-      get_friend_application_list_as_applicant: [
-        'void',
-        [CB_S_I_S_S, 'string'],
-      ],
-      accept_friend_application: ['void', [CB_S_I_S_S, 'string', 'string']],
-      refuse_friend_application: ['void', [CB_S_I_S_S, 'string', 'string']],
-      add_black: ['void', [CB_S_I_S_S, 'string', 'string']],
-      get_black_list: ['void', [CB_S_I_S_S, 'string']],
-      remove_black: ['void', [CB_S_I_S_S, 'string', 'string']],
-
-      // Group related functions
-      create_group: ['void', [CB_S_I_S_S, 'string', 'string']],
-      join_group: ['void', [CB_S_I_S_S, 'string', 'string', 'string', 'int']],
-      quit_group: ['void', [CB_S_I_S_S, 'string', 'string']],
-      dismiss_group: ['void', [CB_S_I_S_S, 'string', 'string']],
-      change_group_mute: ['void', [CB_S_I_S_S, 'string', 'string', 'int']],
+      subscribe_users_status: ['void', ['pointer', 'string', 'string']],
+      unsubscribe_users_status: ['void', ['pointer', 'string', 'string']],
+      get_subscribe_users_status: ['void', ['pointer', 'string']],
+      get_user_status: ['void', ['pointer', 'string', 'string']],
+      // Friend functions
+      get_specified_friends_info: ['void', ['pointer', 'string', 'string']],
+      get_friend_list: ['void', ['pointer', 'string']],
+      get_friend_list_page: ['void', ['pointer', 'string', 'int', 'int']],
+      search_friends: ['void', ['pointer', 'string', 'string']],
+      check_friend: ['void', ['pointer', 'string', 'string']],
+      add_friend: ['void', ['pointer', 'string', 'string']],
+      set_friend_remark: ['void', ['pointer', 'string', 'string']],
+      delete_friend: ['void', ['pointer', 'string', 'string']],
+      get_friend_application_list_as_recipient: ['void', ['pointer', 'string']],
+      get_friend_application_list_as_applicant: ['void', ['pointer', 'string']],
+      accept_friend_application: ['void', ['pointer', 'string', 'string']],
+      refuse_friend_application: ['void', ['pointer', 'string', 'string']],
+      add_black: ['void', ['pointer', 'string', 'string']],
+      get_black_list: ['void', ['pointer', 'string']],
+      remove_black: ['void', ['pointer', 'string', 'string']],
+      // Group functions
+      create_group: ['void', ['pointer', 'string', 'string']],
+      join_group: ['void', ['pointer', 'string', 'string', 'string', 'int']],
+      quit_group: ['void', ['pointer', 'string', 'string']],
+      dismiss_group: ['void', ['pointer', 'string', 'string']],
+      change_group_mute: ['void', ['pointer', 'string', 'string', 'int']],
       change_group_member_mute: [
         'void',
-        [CB_S_I_S_S, 'string', 'string', 'string', 'int'],
+        ['pointer', 'string', 'string', 'string', 'int'],
       ],
       set_group_member_role_level: [
         'void',
-        [CB_S_I_S_S, 'string', 'string', 'string', 'int'],
+        ['pointer', 'string', 'string', 'string', 'int'],
       ],
-      set_group_member_info: ['void', [CB_S_I_S_S, 'string', 'string']],
-      get_joined_group_list: ['void', [CB_S_I_S_S, 'string']],
-      get_specified_groups_info: ['void', [CB_S_I_S_S, 'string', 'string']],
-      search_groups: ['void', [CB_S_I_S_S, 'string', 'string']],
-      set_group_info: ['void', [CB_S_I_S_S, 'string', 'string']],
-      set_group_verification: ['void', [CB_S_I_S_S, 'string', 'string', 'int']],
+      set_group_member_info: ['void', ['pointer', 'string', 'string']],
+      get_joined_group_list: ['void', ['pointer', 'string']],
+      get_specified_groups_info: ['void', ['pointer', 'string', 'string']],
+      search_groups: ['void', ['pointer', 'string', 'string']],
+      set_group_info: ['void', ['pointer', 'string', 'string']],
+      set_group_verification: ['void', ['pointer', 'string', 'string', 'int']],
       set_group_look_member_info: [
         'void',
-        [CB_S_I_S_S, 'string', 'string', 'int'],
+        ['pointer', 'string', 'string', 'int'],
       ],
       set_group_apply_member_friend: [
         'void',
-        [CB_S_I_S_S, 'string', 'string', 'int'],
+        ['pointer', 'string', 'string', 'int'],
       ],
       get_group_member_list: [
         'void',
-        [CB_S_I_S_S, 'string', 'string', 'int', 'int', 'int'],
+        ['pointer', 'string', 'string', 'int', 'int', 'int'],
       ],
       get_group_member_owner_and_admin: [
         'void',
-        [CB_S_I_S_S, 'string', 'string'],
+        ['pointer', 'string', 'string'],
       ],
       get_group_member_list_by_join_time_filter: [
         'void',
         [
-          CB_S_I_S_S,
+          'pointer',
           'string',
           'string',
           'int',
@@ -206,44 +286,43 @@ class OpenIMSDK
       ],
       get_specified_group_members_info: [
         'void',
-        [CB_S_I_S_S, 'string', 'string', 'string'],
+        ['pointer', 'string', 'string', 'string'],
       ],
       kick_group_member: [
         'void',
-        [CB_S_I_S_S, 'string', 'string', 'string', 'string'],
+        ['pointer', 'string', 'string', 'string', 'string'],
       ],
-      transfer_group_owner: [
-        'void',
-        [CB_S_I_S_S, 'string', 'string', 'string'],
-      ],
+      transfer_group_owner: ['void', ['pointer', 'string', 'string', 'string']],
       invite_user_to_group: [
         'void',
-        [CB_S_I_S_S, 'string', 'string', 'string', 'string'],
+        ['pointer', 'string', 'string', 'string', 'string'],
       ],
-      get_group_application_list_as_recipient: ['void', [CB_S_I_S_S, 'string']],
-      get_group_application_list_as_applicant: ['void', [CB_S_I_S_S, 'string']],
+      get_group_application_list_as_recipient: ['void', ['pointer', 'string']],
+      get_group_application_list_as_applicant: ['void', ['pointer', 'string']],
       accept_group_application: [
         'void',
-        [CB_S_I_S_S, 'string', 'string', 'string', 'string'],
+        ['pointer', 'string', 'string', 'string', 'string'],
       ],
       refuse_group_application: [
         'void',
-        [CB_S_I_S_S, 'string', 'string', 'string', 'string'],
+        ['pointer', 'string', 'string', 'string', 'string'],
       ],
       set_group_member_nickname: [
         'void',
-        [CB_S_I_S_S, 'string', 'string', 'string', 'string'],
+        ['pointer', 'string', 'string', 'string', 'string'],
       ],
-      search_group_members: ['void', [CB_S_I_S_S, 'string', 'string']],
-      is_join_group: ['void', [CB_S_I_S_S, 'string', 'string']],
+      search_group_members: ['void', ['pointer', 'string', 'string']],
+      is_join_group: ['void', ['pointer', 'string', 'string']],
     }) as LibOpenIMSDK;
 
+    // eslint-disable-next-line
+    const emitFn = emitProxy ?? this.emit;
     this.listenerCallback = ffi.Callback(
       'void',
       ['int', 'string'],
       (event: NativeEvent, data) => {
         const cbEvent = eventMapping[event];
-        this.emit(cbEvent, data);
+        emitFn(cbEvent, this.generateEventResponse(data));
         console.log(`listener callback - Event: ${cbEvent}, Data: ${data}`);
       }
     );
@@ -254,6 +333,31 @@ class OpenIMSDK
     Object.assign(this, setupConversationModule(this));
     Object.assign(this, setupMessageModule(this));
   }
+
+  generateEventResponse = (data: unknown): BaseResponse => {
+    let errCode = 0;
+    let errMsg = '';
+    try {
+      data = JSON.parse(data as string);
+    } catch (error) {
+      // do nothing
+    }
+    // @ts-ignore
+    if (isObject(data) && data.errCode !== undefined) {
+      // @ts-ignore
+      errCode = data.errCode;
+      // @ts-ignore
+      errMsg = data.errMsg;
+      // @ts-ignore
+      data = data.data;
+    }
+    return {
+      errCode,
+      errMsg,
+      data,
+      operationID: '',
+    };
+  };
 
   baseCallbackWrap = <T>(
     resolve: (response: BaseResponse<T>) => void,
@@ -358,8 +462,31 @@ class OpenIMSDK
       this.libOpenIMSDK.un_init_sdk(`unInitSDK-${opid}`)
     );
 
+  setAppBackgroundStatus = (isInBackground: boolean, opid = uuidV4()) =>
+    new Promise<BaseResponse<void>>((resolve, reject) => {
+      this.libOpenIMSDK.set_app_background_status(
+        this.baseCallbackWrap<void>(resolve, reject),
+        opid,
+        isInBackground ? 1 : 0
+      );
+    });
+
+  networkStatusChanged = (opid = uuidV4()) =>
+    new Promise<BaseResponse<void>>((resolve, reject) => {
+      this.libOpenIMSDK.network_status_changed(
+        this.baseCallbackWrap<void>(resolve, reject),
+        opid
+      );
+    });
+
   // implements user api
   getSelfUserInfo!: UserModuleApi['getSelfUserInfo'];
+  setSelfInfo!: UserModuleApi['setSelfInfo'];
+  getUsersInfoWithCache!: UserModuleApi['getUsersInfoWithCache'];
+  subscribeUsersStatus!: UserModuleApi['subscribeUsersStatus'];
+  unsubscribeUsersStatus!: UserModuleApi['unsubscribeUsersStatus'];
+  getSubscribeUsersStatus!: UserModuleApi['getSubscribeUsersStatus'];
+  setGlobalRecvMessageOpt!: UserModuleApi['setGlobalRecvMessageOpt'];
 
   // implements friend api
   acceptFriendApplication!: FriendModuleApi['acceptFriendApplication'];
@@ -404,6 +531,22 @@ class OpenIMSDK
 
   // implements conversation api
   getAllConversationList!: ConversationModuleApi['getAllConversationList'];
+  getConversationListSplit!: ConversationModuleApi['getConversationListSplit'];
+  getOneConversation!: ConversationModuleApi['getOneConversation'];
+  getMultipleConversation!: ConversationModuleApi['getMultipleConversation'];
+  getConversationIDBySessionType!: ConversationModuleApi['getConversationIDBySessionType'];
+  getTotalUnreadMsgCount!: ConversationModuleApi['getTotalUnreadMsgCount'];
+  markConversationMessageAsRead!: ConversationModuleApi['markConversationMessageAsRead'];
+  setConversationDraft!: ConversationModuleApi['setConversationDraft'];
+  pinConversation!: ConversationModuleApi['pinConversation'];
+  setConversationRecvMessageOpt!: ConversationModuleApi['setConversationRecvMessageOpt'];
+  setConversationPrivateChat!: ConversationModuleApi['setConversationPrivateChat'];
+  setConversationBurnDuration!: ConversationModuleApi['setConversationBurnDuration'];
+  resetConversationGroupAtType!: ConversationModuleApi['resetConversationGroupAtType'];
+  hideConversation!: ConversationModuleApi['hideConversation'];
+  hideAllConversation!: ConversationModuleApi['hideAllConversation'];
+  clearConversationAndDeleteAllMsg!: ConversationModuleApi['clearConversationAndDeleteAllMsg'];
+  deleteConversationAndDeleteAllMsg!: ConversationModuleApi['deleteConversationAndDeleteAllMsg'];
 
   // implements message api
   createTextMessage!: MessageModuleApi['createTextMessage'];
@@ -428,7 +571,20 @@ class OpenIMSDK
   createFileMessageFromFullPath!: MessageModuleApi['createFileMessageFromFullPath'];
   createFileMessageByUrl!: MessageModuleApi['createFileMessageByUrl'];
   getAdvancedHistoryMessageList!: MessageModuleApi['getAdvancedHistoryMessageList'];
+  getAdvancedHistoryMessageListReverse!: MessageModuleApi['getAdvancedHistoryMessageListReverse'];
   sendMessage!: MessageModuleApi['sendMessage'];
+  sendMessageNotOss!: MessageModuleApi['sendMessageNotOss'];
+  findMessageList!: MessageModuleApi['findMessageList'];
+  revokeMessage!: MessageModuleApi['revokeMessage'];
+  typingStatusUpdate!: MessageModuleApi['typingStatusUpdate'];
+  deleteMessageFromLocalStorage!: MessageModuleApi['deleteMessageFromLocalStorage'];
+  deleteMessage!: MessageModuleApi['deleteMessage'];
+  deleteAllMsgFromLocalAndSvr!: MessageModuleApi['deleteAllMsgFromLocalAndSvr'];
+  deleteAllMsgFromLocal!: MessageModuleApi['deleteAllMsgFromLocal'];
+  searchLocalMessages!: MessageModuleApi['searchLocalMessages'];
+  insertGroupMessageToLocalStorage!: MessageModuleApi['insertGroupMessageToLocalStorage'];
+  insertSingleMessageToLocalStorage!: MessageModuleApi['insertSingleMessageToLocalStorage'];
+  setMessageLocalEx!: MessageModuleApi['setMessageLocalEx'];
 }
 
 export default OpenIMSDK;

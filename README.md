@@ -1,11 +1,8 @@
-# JavaScript/TypeScript Client SDK for OpenIM 👨‍💻💬
+# Node/Electron Client SDK for OpenIM 👨‍💻💬
 
 Use this SDK to add instant messaging capabilities to your application. By connecting to a self-hosted [OpenIM](https://www.openim.online/) server, you can quickly integrate instant messaging capabilities into your app with just a few lines of code.
 
 The underlying SDK core is implemented in [OpenIM SDK Core](https://github.com/openimsdk/openim-sdk-core). Using the [WebAssembly](https://webassembly.org/) support provided by Go language, it can be compiled into wasm for web integration. The web interacts with the [OpenIM SDK Core](https://github.com/openimsdk/openim-sdk-core) through JSON, and the SDK exposes a re-encapsulated API for easy usage. In terms of data storage, JavaScript handles the logic of the SQL layer by virtualizing SQLite and storing it in IndexedDB using [sql.js](https://sql.js.org/).
-
-
-
 
 ## Documentation 📚
 
@@ -18,75 +15,8 @@ For the SDK reference, see [https://doc.rentsoft.cn/sdks/quickstart/browser](htt
 ### Adding Dependencies
 
 ```shell
-npm install open-im-sdk-wasm --save
+npm install open-im-sdk-node --save
 ```
-
-### Obtaining Required Static Resources for WASM
-
-Follow these steps to obtain the static resources required for WebAssembly (WASM):
-
-1. Locate the `open-im-sdk-wasm` subdirectory in the `node_modules` directory of your project. Copy all the files in the `assets` folder to your project's public resource directory.
-
-   The files to be copied are:
-
-   - `openIM.wasm`
-   - `sql-wasm.wasm`
-   - `wasm_exec.js`
-
-2. After copying the files, import the `wasm_exec.js` file in your `index.html` file using a `<script>` tag.
-
-### Possible Issues ❗
-
-#### For Webpack 5+
-
-Add the following configuration to your Webpack configuration:
-
-```js
-resolve: {
-  fallback: {
-    fs: false,
-    path: false,
-    crypto: false,
-  },
-},
-```
-
-#### For Webpack 4 or Vite
-
-**Note:**
-If you are using `Webpack 4`, you will also need to install the worker loader.
-
-```shell
-npm install worker-loader worker-plugin -D
-```
-
-Add the following configuration to your Webpack configuration:
-
-```js
-const WorkerPlugin = require("worker-plugin");
-
-// ...
-
-plugins: [new WorkerPlugin()],
-
-// ...
-```
-
-Follow these steps:
-
-1. Copy the `lib` directory from the npm package to your project (e.g., `src/utils/lib`).
-
-2. Modify the import method of the web worker in the `lib/api/index.js` file.
-
-   ```js
-   // For Webpack 4:
-   + import IMWorker from 'worker-loader!./worker.js';
-   // For Vite:
-   + import IMWorker from './worker?worker';
-
-   - worker = new Worker(new URL('./worker.js', import.meta.url));
-   + worker = new IMWorker();
-   ```
 
 ## Usage 🚀
 
@@ -95,11 +25,9 @@ The following examples demonstrate how to use the SDK. TypeScript is used, provi
 ### Importing the SDK
 
 ```typescript
-import { getSDK } from 'open-im-sdk-wasm';
-// or your own path after copying
-// import { getSDK } from '@/utils/lib';
+import OpenIMSDK from 'open-im-sdk-node';
 
-const OpenIM = getSDK();
+const OpenIM = new OpenIMSDK();
 ```
 
 ### Logging In and Listening for Connection Status

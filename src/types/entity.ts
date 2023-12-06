@@ -1,3 +1,4 @@
+import { CbEvents } from '@/constant/callback';
 import {
   GroupType,
   ApplicationHandleResult,
@@ -15,6 +16,8 @@ import {
   MessageStatus,
   OnlineState,
 } from './enum';
+
+export type EmitProxy = (event: CbEvents, ...args: any[]) => void;
 
 export type BaseCallbackWrap = <T>(
   resolve: (response: BaseResponse<T>) => void,

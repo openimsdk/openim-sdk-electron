@@ -12,14 +12,21 @@ import {
   FaceMessageParams,
   FileMsgByPathParams,
   FileMsgByUrlParams,
+  FindMessageParams,
   GetAdvancedHistoryMsgParams,
   ImageMsgByUrlParams,
+  InsertGroupMsgParams,
+  InsertSingleMsgParams,
   LocationMsgParams,
   MergerMsgParams,
+  OpreateMessageParams,
   QuoteMsgParams,
+  SearchLocalParams,
   SendMsgParams,
+  SetMessageLocalExParams,
   SoundMsgByPathParams,
   SoundMsgByUrlParams,
+  TypingUpdateParams,
   VideoMsgByPathParams,
   VideoMsgByUrlParams,
 } from '@/types/params';
@@ -132,6 +139,7 @@ export function setupMessageModule(openIMSDK: OpenIMSDK) {
         opid,
         openIMSDK.libOpenIMSDK.create_image_message_by_url(
           opid,
+          params.sourcePath,
           JSON.stringify(params.sourcePicture),
           JSON.stringify(params.bigPicture),
           JSON.stringify(params.snapshotPicture)
@@ -257,89 +265,92 @@ export function setupMessageModule(openIMSDK: OpenIMSDK) {
         );
       }),
 
-    // sendMessageNotOss: (params: SendMsgParams, opid = uuidV4()) =>
-    //   new Promise<BaseResponse<MessageItem>>((resolve, reject) => {
-    //     const offlinePushInfo = params.offlinePushInfo ?? {
-    //       title: 'You has a new message.',
-    //       desc: 'You has a new message.',
-    //       ex: '',
-    //       iOSPushSound: '+1',
-    //       iOSBadgeCount: true,
-    //     };
-    //     openIMSDK.libOpenIMSDK.send_message_not_oss(
-    //       openIMSDK.baseCallbackWrap<MessageItem>(resolve, reject),
-    //       opid,
-    //       JSON.stringify(params.message),
-    //       params.recvID,
-    //       params.groupID,
-    //       JSON.stringify(offlinePushInfo)
-    //     );
-    //   }),
+    sendMessageNotOss: (params: SendMsgParams, opid = uuidV4()) =>
+      new Promise<BaseResponse<MessageItem>>((resolve, reject) => {
+        const offlinePushInfo = params.offlinePushInfo ?? {
+          title: 'You has a new message.',
+          desc: 'You has a new message.',
+          ex: '',
+          iOSPushSound: '+1',
+          iOSBadgeCount: true,
+        };
+        openIMSDK.libOpenIMSDK.send_message_not_oss(
+          openIMSDK.baseCallbackWrap<MessageItem>(resolve, reject),
+          opid,
+          JSON.stringify(params.message),
+          params.recvID,
+          params.groupID,
+          JSON.stringify(offlinePushInfo)
+        );
+      }),
 
-    // typingStatusUpdate: (params: TypingUpdateParams, opid = uuidV4()) =>
-    //   new Promise<BaseResponse<void>>((resolve, reject) => {
-    //     openIMSDK.libOpenIMSDK.typing_status_update(
-    //       openIMSDK.baseCallbackWrap<void>(resolve, reject),
-    //       opid,
-    //       params.recvID,
-    //       params.msgTip
-    //     );
-    //   }),
+    typingStatusUpdate: (params: TypingUpdateParams, opid = uuidV4()) =>
+      new Promise<BaseResponse<void>>((resolve, reject) => {
+        openIMSDK.libOpenIMSDK.typing_status_update(
+          openIMSDK.baseCallbackWrap<void>(resolve, reject),
+          opid,
+          params.recvID,
+          params.msgTip
+        );
+      }),
 
-    // revokeMessage: (params: OpreateMessageParams, opid = uuidV4()) =>
-    //   new Promise<BaseResponse<void>>((resolve, reject) => {
-    //     openIMSDK.libOpenIMSDK.revoke_message(
-    //       openIMSDK.baseCallbackWrap<void>(resolve, reject),
-    //       opid,
-    //       params.conversationID,
-    //       params.clientMsgID
-    //     );
-    //   }),
+    revokeMessage: (params: OpreateMessageParams, opid = uuidV4()) =>
+      new Promise<BaseResponse<void>>((resolve, reject) => {
+        openIMSDK.libOpenIMSDK.revoke_message(
+          openIMSDK.baseCallbackWrap<void>(resolve, reject),
+          opid,
+          params.conversationID,
+          params.clientMsgID
+        );
+      }),
 
-    // deleteMessage: (params: OpreateMessageParams, opid = uuidV4()) =>
-    //   new Promise<BaseResponse<void>>((resolve, reject) => {
-    //     openIMSDK.libOpenIMSDK.delete_message(
-    //       openIMSDK.baseCallbackWrap<void>(resolve, reject),
-    //       opid,
-    //       params.conversationID,
-    //       params.clientMsgID
-    //     );
-    //   }),
+    deleteMessage: (params: OpreateMessageParams, opid = uuidV4()) =>
+      new Promise<BaseResponse<void>>((resolve, reject) => {
+        openIMSDK.libOpenIMSDK.delete_message(
+          openIMSDK.baseCallbackWrap<void>(resolve, reject),
+          opid,
+          params.conversationID,
+          params.clientMsgID
+        );
+      }),
 
-    // deleteMessageFromLocalStorage: (params: OpreateMessageParams, opid = uuidV4()) =>
-    //   new Promise<BaseResponse<void>>((resolve, reject) => {
-    //     openIMSDK.libOpenIMSDK.delete_message_from_local_storage(
-    //       openIMSDK.baseCallbackWrap<void>(resolve, reject),
-    //       opid,
-    //       params.conversationID,
-    //       params.clientMsgID
-    //     );
-    //   }),
+    deleteMessageFromLocalStorage: (
+      params: OpreateMessageParams,
+      opid = uuidV4()
+    ) =>
+      new Promise<BaseResponse<void>>((resolve, reject) => {
+        openIMSDK.libOpenIMSDK.delete_message_from_local_storage(
+          openIMSDK.baseCallbackWrap<void>(resolve, reject),
+          opid,
+          params.conversationID,
+          params.clientMsgID
+        );
+      }),
 
-    // deleteAllMsgFromLocal: (opid = uuidV4()) =>
-    //   new Promise<BaseResponse<void>>((resolve, reject) => {
-    //     openIMSDK.libOpenIMSDK.delete_all_msg_from_local(
-    //       openIMSDK.baseCallbackWrap<void>(resolve, reject),
-    //       opid,
-    //     );
-    //   }),
+    deleteAllMsgFromLocal: (opid = uuidV4()) =>
+      new Promise<BaseResponse<void>>((resolve, reject) => {
+        openIMSDK.libOpenIMSDK.delete_all_msg_from_local(
+          openIMSDK.baseCallbackWrap<void>(resolve, reject),
+          opid
+        );
+      }),
 
-    // deleteAllMsgFromLocalAndSvr: (opid = uuidV4()) =>
-    //   new Promise<BaseResponse<void>>((resolve, reject) => {
-    //     openIMSDK.libOpenIMSDK.delete_all_msg_from_local_and_svr(
-    //       openIMSDK.baseCallbackWrap<void>(resolve, reject),
-    //       opid,
-    //     );
-    //   }),
+    deleteAllMsgFromLocalAndSvr: (opid = uuidV4()) =>
+      new Promise<BaseResponse<void>>((resolve, reject) => {
+        openIMSDK.libOpenIMSDK.delete_all_msg_from_local_and_svr(
+          openIMSDK.baseCallbackWrap<void>(resolve, reject),
+          opid
+        );
+      }),
 
-    // searchLocalMessages: (params: SearchLocalParams, opid = uuidV4()) =>
-    //   new Promise<BaseResponse<MessageItem[]>>((resolve, reject) => {
-    //     openIMSDK.libOpenIMSDK.search_local_messages(
-    //       openIMSDK.baseCallbackWrap<MessageItem[]>(resolve, reject),
-    //       opid,
-    //       JSON.stringify(params)
-    //     );
-    //   }),
+    searchLocalMessages: (params: SearchLocalParams, opid = uuidV4()) =>
+      new Promise<BaseResponse<MessageItem[]>>((resolve, reject) => {
+        openIMSDK.libOpenIMSDK.search_local_messages(
+          openIMSDK.baseCallbackWrap<MessageItem[]>(resolve, reject),
+          opid,
+          JSON.stringify(params)
+        );
+      }),
 
     getAdvancedHistoryMessageList: (
       params: GetAdvancedHistoryMsgParams,
@@ -353,54 +364,61 @@ export function setupMessageModule(openIMSDK: OpenIMSDK) {
         );
       }),
 
-    // getAdvancedHistoryMessageListReverse: (
-    //   params: GetAdvancedHistoryMsgParams, opid = uuidV4()
-    // ) =>
-    //   new Promise<BaseResponse<AdvancedGetMessageResult>>((resolve, reject) => {
-    //     openIMSDK.libOpenIMSDK.get_advanced_history_message_list_reverse(
-    //       openIMSDK.baseCallbackWrap<AdvancedGetMessageResult>(resolve, reject),
-    //       opid,
-    //       JSON.stringify(params)
-    //     );
-    //   }),
-    // findMessageList: (params: FindMessageParams[], opid = uuidV4()) =>
-    //   new Promise<BaseResponse<MessageItem[]>>((resolve, reject) => {
-    //     openIMSDK.libOpenIMSDK.find_message_list(
-    //       openIMSDK.baseCallbackWrap<MessageItem[]>(resolve, reject),
-    //       opid,
-    //       JSON.stringify(params)
-    //     );
-    //   }),
-    // insertGroupMessageToLocalStorage: (params: InsertGroupMsgParams, opid = uuidV4()) =>
-    //   new Promise<BaseResponse<void>>((resolve, reject) => {
-    //     openIMSDK.libOpenIMSDK.insert_group_message_to_local_storage(
-    //       openIMSDK.baseCallbackWrap<void>(resolve, reject),
-    //       opid,
-    //       JSON.stringify(params.message),
-    //       params.groupID,
-    //       params.sendID
-    //     );
-    //   }),
-    // insertSingleMessageToLocalStorage: (params: InsertSingleMsgParams, opid = uuidV4()) =>
-    //   new Promise<BaseResponse<void>>((resolve, reject) => {
-    //     openIMSDK.libOpenIMSDK.insert_single_message_to_local_storage(
-    //       openIMSDK.baseCallbackWrap<void>(resolve, reject),
-    //       opid,
-    //       JSON.stringify(params.message),
-    //       params.recvID,
-    //       params.sendID
-    //     );
-    //   }),
-    // setMessageLocalEx: (params: SetMessageLocalExParams, opid = uuidV4()) =>
-    //   new Promise<BaseResponse<void>>((resolve, reject) => {
-    //     openIMSDK.libOpenIMSDK.set_message_local_ex(
-    //       openIMSDK.baseCallbackWrap<void>(resolve, reject),
-    //       opid,
-    //       params.conversationID,
-    //       params.clientMsgID,
-    //       params.localEx
-    //     );
-    //   }),
+    getAdvancedHistoryMessageListReverse: (
+      params: GetAdvancedHistoryMsgParams,
+      opid = uuidV4()
+    ) =>
+      new Promise<BaseResponse<AdvancedGetMessageResult>>((resolve, reject) => {
+        openIMSDK.libOpenIMSDK.get_advanced_history_message_list_reverse(
+          openIMSDK.baseCallbackWrap<AdvancedGetMessageResult>(resolve, reject),
+          opid,
+          JSON.stringify(params)
+        );
+      }),
+    findMessageList: (params: FindMessageParams[], opid = uuidV4()) =>
+      new Promise<BaseResponse<MessageItem[]>>((resolve, reject) => {
+        openIMSDK.libOpenIMSDK.find_message_list(
+          openIMSDK.baseCallbackWrap<MessageItem[]>(resolve, reject),
+          opid,
+          JSON.stringify(params)
+        );
+      }),
+    insertGroupMessageToLocalStorage: (
+      params: InsertGroupMsgParams,
+      opid = uuidV4()
+    ) =>
+      new Promise<BaseResponse<void>>((resolve, reject) => {
+        openIMSDK.libOpenIMSDK.insert_group_message_to_local_storage(
+          openIMSDK.baseCallbackWrap<void>(resolve, reject),
+          opid,
+          JSON.stringify(params.message),
+          params.groupID,
+          params.sendID
+        );
+      }),
+    insertSingleMessageToLocalStorage: (
+      params: InsertSingleMsgParams,
+      opid = uuidV4()
+    ) =>
+      new Promise<BaseResponse<void>>((resolve, reject) => {
+        openIMSDK.libOpenIMSDK.insert_single_message_to_local_storage(
+          openIMSDK.baseCallbackWrap<void>(resolve, reject),
+          opid,
+          JSON.stringify(params.message),
+          params.recvID,
+          params.sendID
+        );
+      }),
+    setMessageLocalEx: (params: SetMessageLocalExParams, opid = uuidV4()) =>
+      new Promise<BaseResponse<void>>((resolve, reject) => {
+        openIMSDK.libOpenIMSDK.set_message_local_ex(
+          openIMSDK.baseCallbackWrap<void>(resolve, reject),
+          opid,
+          params.conversationID,
+          params.clientMsgID,
+          params.localEx
+        );
+      }),
   };
 }
 
@@ -489,12 +507,58 @@ export interface MessageModuleApi {
     params: FileMsgByUrlParams,
     opid?: string
   ) => Promise<BaseResponse<MessageItem>>;
-  getAdvancedHistoryMessageList: (
-    params: GetAdvancedHistoryMsgParams,
-    opid?: string
-  ) => Promise<BaseResponse<AdvancedGetMessageResult>>;
   sendMessage: (
     params: SendMsgParams,
     opid?: string
   ) => Promise<BaseResponse<MessageItem>>;
+  sendMessageNotOss: (
+    params: SendMsgParams,
+    opid?: string
+  ) => Promise<BaseResponse<MessageItem>>;
+  typingStatusUpdate: (
+    params: TypingUpdateParams,
+    opid?: string
+  ) => Promise<BaseResponse<void>>;
+  revokeMessage: (
+    params: OpreateMessageParams,
+    opid?: string
+  ) => Promise<BaseResponse<void>>;
+  deleteMessage: (
+    params: OpreateMessageParams,
+    opid?: string
+  ) => Promise<BaseResponse<void>>;
+  deleteMessageFromLocalStorage: (
+    params: OpreateMessageParams,
+    opid?: string
+  ) => Promise<BaseResponse<void>>;
+  deleteAllMsgFromLocal: (opid?: string) => Promise<BaseResponse<void>>;
+  deleteAllMsgFromLocalAndSvr: (opid?: string) => Promise<BaseResponse<void>>;
+  searchLocalMessages: (
+    params: SearchLocalParams,
+    opid?: string
+  ) => Promise<BaseResponse<MessageItem[]>>;
+  getAdvancedHistoryMessageList: (
+    params: GetAdvancedHistoryMsgParams,
+    opid?: string
+  ) => Promise<BaseResponse<AdvancedGetMessageResult>>;
+  getAdvancedHistoryMessageListReverse: (
+    params: GetAdvancedHistoryMsgParams,
+    opid?: string
+  ) => Promise<BaseResponse<AdvancedGetMessageResult>>;
+  findMessageList: (
+    params: FindMessageParams[],
+    opid?: string
+  ) => Promise<BaseResponse<MessageItem[]>>;
+  insertGroupMessageToLocalStorage: (
+    params: InsertGroupMsgParams,
+    opid?: string
+  ) => Promise<BaseResponse<void>>;
+  insertSingleMessageToLocalStorage: (
+    params: InsertSingleMsgParams,
+    opid?: string
+  ) => Promise<BaseResponse<void>>;
+  setMessageLocalEx: (
+    params: SetMessageLocalExParams,
+    opid?: string
+  ) => Promise<BaseResponse<void>>;
 }

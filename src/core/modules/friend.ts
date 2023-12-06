@@ -4,6 +4,7 @@ import {
   AccessFriendParams,
   SearchFriendParams,
   RemarkFriendParams,
+  AddFriendParams,
 } from '@/types/params';
 
 import {
@@ -35,12 +36,12 @@ export function setupFriendModule(openIMSDK: OpenIMSDK) {
         );
       }),
 
-    addFriend: (userID: string, opid = uuidV4()) =>
+    addFriend: (params: AddFriendParams, opid = uuidV4()) =>
       new Promise<BaseResponse<void>>((resolve, reject) => {
         openIMSDK.libOpenIMSDK.add_friend(
           openIMSDK.baseCallbackWrap<void>(resolve, reject),
           opid,
-          userID
+          JSON.stringify(params)
         );
       }),
 

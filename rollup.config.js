@@ -1,5 +1,5 @@
-import typescript from 'rollup-plugin-typescript2';
 import alias from '@rollup/plugin-alias';
+import typescript from 'rollup-plugin-typescript2';
 
 export default [
     {

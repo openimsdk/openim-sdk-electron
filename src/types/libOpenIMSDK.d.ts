@@ -33,15 +33,18 @@ declare module 'libOpenIMSDK' {
     login(
       cCallback: CB_S_I_S_S,
       operationID: string,
-      userID: string,
+      uid: string,
       token: string
     ): void;
     logout(cCallback: CB_S_I_S_S, operationID: string): void;
+    set_app_background_status(
+      cCallback: CB_S_I_S_S,
+      operationID: string,
+      isBackground: number
+    ): void;
     network_status_changed(cCallback: CB_S_I_S_S, operationID: string): void;
     get_login_status(operationID: string): number;
     get_login_user(): string;
-
-    // message related functions
     create_text_message(operationID: string, text: string): string;
     create_advanced_text_message(
       operationID: string,
@@ -103,6 +106,7 @@ declare module 'libOpenIMSDK' {
     create_image_message(operationID: string, imagePath: string): string;
     create_image_message_by_url(
       operationID: string,
+      sourcePath: string,
       sourcePicture: string,
       bigPicture: string,
       snapshotPicture: string
@@ -148,11 +152,91 @@ declare module 'libOpenIMSDK' {
       data: string
     ): string;
     create_forward_message(operationID: string, m: string): string;
-    get_advanced_history_message_list(
+    get_all_conversation_list(cCallback: CB_S_I_S_S, operationID: string): void;
+    get_conversation_list_split(
       cCallback: CB_S_I_S_S,
       operationID: string,
-      getMessageOptions: string
+      offset: number,
+      count: number
     ): void;
+    get_one_conversation(
+      cCallback: CB_S_I_S_S,
+      operationID: string,
+      sessionType: number,
+      sourceID: string
+    ): void;
+    get_multiple_conversation(
+      cCallback: CB_S_I_S_S,
+      operationID: string,
+      conversationIDList: string
+    ): void;
+    set_conversation_msg_destruct_time(
+      cCallback: CB_S_I_S_S,
+      operationID: string,
+      conversationID: string,
+      msgDestructTime: number
+    ): void;
+    set_conversation_is_msg_destruct(
+      cCallback: CB_S_I_S_S,
+      operationID: string,
+      conversationID: string,
+      isMsgDestruct: number
+    ): void;
+    hide_conversation(
+      cCallback: CB_S_I_S_S,
+      operationID: string,
+      conversationID: string
+    ): void;
+    get_conversation_recv_message_opt(
+      cCallback: CB_S_I_S_S,
+      operationID: string,
+      conversationIDList: string
+    ): void;
+    set_conversation_draft(
+      cCallback: CB_S_I_S_S,
+      operationID: string,
+      conversationID: string,
+      draftText: string
+    ): void;
+    reset_conversation_group_at_type(
+      cCallback: CB_S_I_S_S,
+      operationID: string,
+      conversationID: string
+    ): void;
+    pin_conversation(
+      cCallback: CB_S_I_S_S,
+      operationID: string,
+      conversationID: string,
+      isPinned: number
+    ): void;
+    set_conversation_private_chat(
+      cCallback: CB_S_I_S_S,
+      operationID: string,
+      conversationID: string,
+      isPrivate: number
+    ): void;
+    set_conversation_burn_duration(
+      cCallback: CB_S_I_S_S,
+      operationID: string,
+      conversationID: string,
+      duration: number
+    ): void;
+    set_conversation_recv_message_opt(
+      cCallback: CB_S_I_S_S,
+      operationID: string,
+      conversationID: string,
+      opt: number
+    ): void;
+    get_total_unread_msg_count(
+      cCallback: CB_S_I_S_S,
+      operationID: string
+    ): void;
+    get_at_all_tag(operationID: string): string;
+    get_conversation_id_by_session_type(
+      operationID: string,
+      sourceID: string,
+      sessionType: number
+    ): string;
     send_message(
       cCallback: CB_S_I_S_S_I,
       operationID: string,
@@ -161,31 +245,142 @@ declare module 'libOpenIMSDK' {
       groupID: string,
       offlinePushInfo: string
     ): void;
-
-    // Conversation related functions
-    get_all_conversation_list(cCallback: CB_S_I_S_S, operationID: string): void;
-
-    // User related functions
+    send_message_not_oss(
+      cCallback: CB_S_I_S_S_I,
+      operationID: string,
+      message: string,
+      recvID: string,
+      groupID: string,
+      offlinePushInfo: string
+    ): void;
+    find_message_list(
+      cCallback: CB_S_I_S_S,
+      operationID: string,
+      findMessageOptions: string
+    ): void;
+    get_advanced_history_message_list(
+      cCallback: CB_S_I_S_S,
+      operationID: string,
+      getMessageOptions: string
+    ): void;
+    get_advanced_history_message_list_reverse(
+      cCallback: CB_S_I_S_S,
+      operationID: string,
+      getMessageOptions: string
+    ): void;
+    revoke_message(
+      cCallback: CB_S_I_S_S,
+      operationID: string,
+      conversationID: string,
+      clientMsgID: string
+    ): void;
+    typing_status_update(
+      cCallback: CB_S_I_S_S,
+      operationID: string,
+      recvID: string,
+      msgTip: string
+    ): void;
+    mark_conversation_message_as_read(
+      cCallback: CB_S_I_S_S,
+      operationID: string,
+      conversationID: string
+    ): void;
+    delete_message_from_local_storage(
+      cCallback: CB_S_I_S_S,
+      operationID: string,
+      conversationID: string,
+      clientMsgID: string
+    ): void;
+    delete_message(
+      cCallback: CB_S_I_S_S,
+      operationID: string,
+      conversationID: string,
+      clientMsgID: string
+    ): void;
+    hide_all_conversations(cCallback: CB_S_I_S_S, operationID: string): void;
+    delete_all_msg_from_local_and_svr(
+      cCallback: CB_S_I_S_S,
+      operationID: string
+    ): void;
+    delete_all_msg_from_local(cCallback: CB_S_I_S_S, operationID: string): void;
+    clear_conversation_and_delete_all_msg(
+      cCallback: CB_S_I_S_S,
+      operationID: string,
+      conversationID: string
+    ): void;
+    delete_conversation_and_delete_all_msg(
+      cCallback: CB_S_I_S_S,
+      operationID: string,
+      conversationID: string
+    ): void;
+    insert_single_message_to_local_storage(
+      cCallback: CB_S_I_S_S,
+      operationID: string,
+      message: string,
+      recvID: string,
+      sendID: string
+    ): void;
+    insert_group_message_to_local_storage(
+      cCallback: CB_S_I_S_S,
+      operationID: string,
+      message: string,
+      groupID: string,
+      sendID: string
+    ): void;
+    search_local_messages(
+      cCallback: CB_S_I_S_S,
+      operationID: string,
+      searchParam: string
+    ): void;
+    set_message_local_ex(
+      cCallback: CB_S_I_S_S,
+      operationID: string,
+      conversationID: string,
+      clientMsgID: string,
+      localEx: string
+    ): void;
     get_users_info(
       cCallback: CB_S_I_S_S,
       operationID: string,
-      userIDList: string
+      userIDs: string
+    ): void;
+    get_users_info_with_cache(
+      cCallback: CB_S_I_S_S,
+      operationID: string,
+      userIDs: string,
+      groupID: string
+    ): void;
+    get_users_info_from_srv(
+      cCallback: CB_S_I_S_S,
+      operationID: string,
+      userIDs: string
     ): void;
     set_self_info(
       cCallback: CB_S_I_S_S,
       operationID: string,
       userInfo: string
     ): void;
+    set_global_recv_message_opt(
+      cCallback: CB_S_I_S_S,
+      operationID: string,
+      opt: number
+    ): void;
     get_self_user_info(cCallback: CB_S_I_S_S, operationID: string): void;
+    update_msg_sender_info(
+      cCallback: CB_S_I_S_S,
+      operationID: string,
+      nickname: string,
+      faceURL: string
+    ): void;
     subscribe_users_status(
       cCallback: CB_S_I_S_S,
       operationID: string,
-      userIDList: string
+      userIDs: string
     ): void;
     unsubscribe_users_status(
       cCallback: CB_S_I_S_S,
       operationID: string,
-      userIDList: string
+      userIDs: string
     ): void;
     get_subscribe_users_status(
       cCallback: CB_S_I_S_S,
@@ -194,10 +389,9 @@ declare module 'libOpenIMSDK' {
     get_user_status(
       cCallback: CB_S_I_S_S,
       operationID: string,
-      userIDList: string
+      userIDs: string
     ): void;
-
-    // Friend related functions
+    // Friend functions
     get_specified_friends_info(
       cCallback: CB_S_I_S_S,
       operationID: string,
@@ -264,8 +458,7 @@ declare module 'libOpenIMSDK' {
       operationID: string,
       removeUserID: string
     ): void;
-
-    // Group related functions
+    // Group functions
     create_group(
       cCallback: CB_S_I_S_S,
       operationID: string,

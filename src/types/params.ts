@@ -76,6 +76,11 @@ export type AccessFriendParams = {
   handleMsg: string;
 };
 
+export type AddFriendParams = {
+  toUserID: string;
+  reqMsg: string;
+};
+
 export type SearchFriendParams = {
   keywordList: string[];
   isSearchUserID: boolean;
