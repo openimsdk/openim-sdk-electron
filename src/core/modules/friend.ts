@@ -1,24 +1,29 @@
 import { v4 as uuidV4 } from 'uuid';
 import OpenIMSDK from '..';
-import {
-  AccessFriendParams,
-  SearchFriendParams,
-  RemarkFriendParams,
-  AddFriendParams,
-} from '@/types/params';
 
+import { BaseResponse } from '@/types/entity';
 import {
-  BaseResponse,
+  AccessFriendApplicationParams,
+  AddBlackParams,
+  AddFriendParams,
+  RemarkFriendParams,
+  SearchFriendParams,
+  SetFriendExParams,
+} from 'open-im-sdk-wasm/lib/types/params';
+import {
+  FriendshipInfo,
   BlackUserItem,
   FriendApplicationItem,
-  FriendshipInfo,
   FullUserItem,
   SearchedFriendsInfo,
-} from '@/types/entity';
+} from 'open-im-sdk-wasm/lib/types/entity';
 
 export function setupFriendModule(openIMSDK: OpenIMSDK) {
   return {
-    acceptFriendApplication: (params: AccessFriendParams, opid = uuidV4()) =>
+    acceptFriendApplication: (
+      params: AccessFriendApplicationParams,
+      opid = uuidV4()
+    ) =>
       new Promise<BaseResponse<void>>((resolve, reject) => {
         openIMSDK.libOpenIMSDK.accept_friend_application(
           openIMSDK.baseCallbackWrap<void>(resolve, reject),
@@ -27,12 +32,13 @@ export function setupFriendModule(openIMSDK: OpenIMSDK) {
         );
       }),
 
-    addBlack: (userID: string, opid = uuidV4()) =>
+    addBlack: (params: AddBlackParams, opid = uuidV4()) =>
       new Promise<BaseResponse<void>>((resolve, reject) => {
         openIMSDK.libOpenIMSDK.add_black(
           openIMSDK.baseCallbackWrap<void>(resolve, reject),
           opid,
-          userID
+          params.toUserID,
+          params.ex ?? ''
         );
       }),
 
@@ -60,6 +66,16 @@ export function setupFriendModule(openIMSDK: OpenIMSDK) {
           openIMSDK.baseCallbackWrap<void>(resolve, reject),
           opid,
           userID
+        );
+      }),
+
+    setFriendsEx: (params: SetFriendExParams, opid = uuidV4()) =>
+      new Promise<BaseResponse<void>>((resolve, reject) => {
+        openIMSDK.libOpenIMSDK.set_friends_ex(
+          openIMSDK.baseCallbackWrap<void>(resolve, reject),
+          opid,
+          JSON.stringify(params),
+          params.ex ?? ''
         );
       }),
 
@@ -104,7 +120,10 @@ export function setupFriendModule(openIMSDK: OpenIMSDK) {
         );
       }),
 
-    refuseFriendApplication: (params: AccessFriendParams, opid = uuidV4()) =>
+    refuseFriendApplication: (
+      params: AccessFriendApplicationParams,
+      opid = uuidV4()
+    ) =>
       new Promise<BaseResponse<void>>((resolve, reject) => {
         openIMSDK.libOpenIMSDK.refuse_friend_application(
           openIMSDK.baseCallbackWrap<void>(resolve, reject),
@@ -144,7 +163,7 @@ export function setupFriendModule(openIMSDK: OpenIMSDK) {
 
 export interface FriendModuleApi {
   acceptFriendApplication: (
-    params: AccessFriendParams,
+    params: AccessFriendApplicationParams,
     opid?: string
   ) => Promise<BaseResponse<void>>;
   addBlack: (userID: string, opid?: string) => Promise<BaseResponse<void>>;
@@ -154,6 +173,10 @@ export interface FriendModuleApi {
     opid?: string
   ) => Promise<BaseResponse<FriendshipInfo[]>>;
   deleteFriend: (userID: string, opid?: string) => Promise<BaseResponse<void>>;
+  setFriendsEx: (
+    params: SetFriendExParams,
+    opid?: string
+  ) => Promise<BaseResponse<void>>;
   getBlackList: (opid?: string) => Promise<BaseResponse<BlackUserItem[]>>;
   getFriendApplicationListAsApplicant: (
     opid?: string
@@ -167,7 +190,7 @@ export interface FriendModuleApi {
     opid?: string
   ) => Promise<BaseResponse<FullUserItem[]>>;
   refuseFriendApplication: (
-    params: AccessFriendParams,
+    params: AccessFriendApplicationParams,
     opid?: string
   ) => Promise<BaseResponse<void>>;
   removeBlack: (userID: string, opid?: string) => Promise<BaseResponse<void>>;

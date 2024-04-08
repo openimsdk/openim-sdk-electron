@@ -1,11 +1,10 @@
-import ffi from '@openim/ffi-napi';
+import koffi from 'koffi';
 import { v4 as uuidV4 } from 'uuid';
 import type { LibOpenIMSDK } from 'libOpenIMSDK';
 import { UserModuleApi, setupUserModule } from './modules/user';
 import { InitConfig, LoginParams } from '@/types/params';
-import { BaseResponse, SelfUserInfo, EmitProxy } from '@/types/entity';
+import { BaseResponse, EmitProxy } from '@/types/entity';
 import { ErrorCode } from '@/constant/api';
-import { LoginStatus } from '@/types/enum';
 import { NativeEvent, eventMapping } from '@/constant/callback';
 import Emitter from '@/utils/emitter';
 import { type FriendModuleApi, setupFriendModule } from './modules/friend';
@@ -15,6 +14,12 @@ import {
   setupConversationModule,
 } from './modules/conversation';
 import { type MessageModuleApi, setupMessageModule } from './modules/message';
+import { CbEvents, LoginStatus } from 'open-im-sdk-wasm';
+import { SelfUserInfo } from 'open-im-sdk-wasm/lib/types/entity';
+import {
+  SetConversationExParams,
+  SetFriendExParams,
+} from 'open-im-sdk-wasm/lib/types/params';
 
 function isObject(value: unknown) {
   return Object.prototype.toString.call(value) === '[object Object]';
@@ -29,302 +34,794 @@ class OpenIMSDK
     ConversationModuleApi,
     MessageModuleApi
 {
-  libOpenIMSDK: LibOpenIMSDK;
-  listenerCallback: Buffer;
+  libOpenIMSDK = {} as LibOpenIMSDK;
+  baseCallbackProto: koffi.IKoffiCType;
+  sendMessageCallbackProto: koffi.IKoffiCType;
+  listenerCallback: koffi.IKoffiRegisteredCallback;
+  lib: koffi.IKoffiLib;
 
   constructor(libPath: string, emitProxy?: EmitProxy) {
     super();
-    this.libOpenIMSDK = ffi.Library(libPath, {
-      set_group_listener: ['void', ['pointer']],
-      set_conversation_listener: ['void', ['pointer']],
-      set_advanced_msg_listener: ['void', ['pointer']],
-      set_batch_msg_listener: ['void', ['pointer']],
-      set_user_listener: ['void', ['pointer']],
-      set_friend_listener: ['void', ['pointer']],
-      set_custom_business_listener: ['void', ['pointer']],
-      init_sdk: ['uint8', ['pointer', 'string', 'string']],
-      un_init_sdk: ['void', ['string']],
-      login: ['void', ['pointer', 'string', 'string', 'string']],
-      logout: ['void', ['pointer', 'string']],
-      set_app_background_status: ['void', ['pointer', 'string', 'int']],
-      network_status_changed: ['void', ['pointer', 'string']],
-      get_login_status: ['int', ['string']],
-      get_login_user: ['string', []],
-      create_text_message: ['string', ['string', 'string']],
-      create_advanced_text_message: ['string', ['string', 'string', 'string']],
-      create_text_at_message: [
-        'string',
-        ['string', 'string', 'string', 'string', 'string'],
-      ],
-      create_location_message: [
-        'string',
-        ['string', 'string', 'double', 'double'],
-      ],
-      create_custom_message: [
-        'string',
-        ['string', 'string', 'string', 'string'],
-      ],
-      create_quote_message: ['string', ['string', 'string', 'string']],
-      create_advanced_quote_message: [
-        'string',
-        ['string', 'string', 'string', 'string'],
-      ],
-      create_card_message: ['string', ['string', 'string']],
-      create_video_message_from_full_path: [
-        'string',
-        ['string', 'string', 'string', 'long long', 'string'],
-      ],
-      create_image_message_from_full_path: ['string', ['string', 'string']],
-      create_sound_message_from_full_path: [
-        'string',
-        ['string', 'string', 'long long'],
-      ],
-      create_file_message_from_full_path: [
-        'string',
-        ['string', 'string', 'string'],
-      ],
-      create_image_message: ['string', ['string', 'string']],
-      create_image_message_by_url: [
-        'string',
-        ['string', 'string', 'string', 'string', 'string'],
-      ],
-      create_sound_message_by_url: ['string', ['string', 'string']],
-      create_sound_message: ['string', ['string', 'string', 'long long']],
-      create_video_message_by_url: ['string', ['string', 'string']],
-      create_video_message: [
-        'string',
-        ['string', 'string', 'string', 'long long', 'string'],
-      ],
-      create_file_message_by_url: ['string', ['string', 'string']],
-      create_file_message: ['string', ['string', 'string', 'string']],
-      create_merger_message: [
-        'string',
-        ['string', 'string', 'string', 'string'],
-      ],
-      create_face_message: ['string', ['string', 'int', 'string']],
-      create_forward_message: ['string', ['string', 'string']],
-      get_all_conversation_list: ['void', ['pointer', 'string']],
-      get_conversation_list_split: [
-        'void',
-        ['pointer', 'string', 'int', 'int'],
-      ],
-      get_one_conversation: ['void', ['pointer', 'string', 'int', 'string']],
-      get_multiple_conversation: ['void', ['pointer', 'string', 'string']],
-      set_conversation_msg_destruct_time: [
-        'void',
-        ['pointer', 'string', 'string', 'long long'],
-      ],
-      set_conversation_is_msg_destruct: [
-        'void',
-        ['pointer', 'string', 'string', 'int'],
-      ],
-      hide_conversation: ['void', ['pointer', 'string', 'string']],
-      get_conversation_recv_message_opt: [
-        'void',
-        ['pointer', 'string', 'string'],
-      ],
-      set_conversation_draft: [
-        'void',
-        ['pointer', 'string', 'string', 'string'],
-      ],
-      reset_conversation_group_at_type: [
-        'void',
-        ['pointer', 'string', 'string'],
-      ],
-      pin_conversation: ['void', ['pointer', 'string', 'string', 'int']],
-      set_conversation_private_chat: [
-        'void',
-        ['pointer', 'string', 'string', 'int'],
-      ],
-      set_conversation_burn_duration: [
-        'void',
-        ['pointer', 'string', 'string', 'int'],
-      ],
-      set_conversation_recv_message_opt: [
-        'void',
-        ['pointer', 'string', 'string', 'int'],
-      ],
-      get_total_unread_msg_count: ['void', ['pointer', 'string']],
-      get_at_all_tag: ['string', ['string']],
-      get_conversation_id_by_session_type: [
-        'string',
-        ['string', 'string', 'int'],
-      ],
-      send_message: [
-        'void',
-        ['pointer', 'string', 'string', 'string', 'string', 'string'],
-      ],
-      send_message_not_oss: [
-        'void',
-        ['pointer', 'string', 'string', 'string', 'string', 'string'],
-      ],
-      find_message_list: ['void', ['pointer', 'string', 'string']],
-      get_advanced_history_message_list: [
-        'void',
-        ['pointer', 'string', 'string'],
-      ],
-      get_advanced_history_message_list_reverse: [
-        'void',
-        ['pointer', 'string', 'string'],
-      ],
-      revoke_message: ['void', ['pointer', 'string', 'string', 'string']],
-      typing_status_update: ['void', ['pointer', 'string', 'string', 'string']],
-      mark_conversation_message_as_read: [
-        'void',
-        ['pointer', 'string', 'string'],
-      ],
-      delete_message_from_local_storage: [
-        'void',
-        ['pointer', 'string', 'string', 'string'],
-      ],
-      delete_message: ['void', ['pointer', 'string', 'string', 'string']],
-      hide_all_conversations: ['void', ['pointer', 'string']],
-      delete_all_msg_from_local_and_svr: ['void', ['pointer', 'string']],
-      delete_all_msg_from_local: ['void', ['pointer', 'string']],
-      clear_conversation_and_delete_all_msg: [
-        'void',
-        ['pointer', 'string', 'string'],
-      ],
-      delete_conversation_and_delete_all_msg: [
-        'void',
-        ['pointer', 'string', 'string'],
-      ],
-      insert_single_message_to_local_storage: [
-        'void',
-        ['pointer', 'string', 'string', 'string', 'string'],
-      ],
-      insert_group_message_to_local_storage: [
-        'void',
-        ['pointer', 'string', 'string', 'string', 'string'],
-      ],
-      search_local_messages: ['void', ['pointer', 'string', 'string']],
-      set_message_local_ex: [
-        'void',
-        ['pointer', 'string', 'string', 'string', 'string'],
-      ],
-      get_users_info: ['void', ['pointer', 'string', 'string']],
-      get_users_info_with_cache: [
-        'void',
-        ['pointer', 'string', 'string', 'string'],
-      ],
-      get_users_info_from_srv: ['void', ['pointer', 'string', 'string']],
-      set_self_info: ['void', ['pointer', 'string', 'string']],
-      set_global_recv_message_opt: ['void', ['pointer', 'string', 'int']],
-      get_self_user_info: ['void', ['pointer', 'string']],
-      update_msg_sender_info: [
-        'void',
-        ['pointer', 'string', 'string', 'string'],
-      ],
-      subscribe_users_status: ['void', ['pointer', 'string', 'string']],
-      unsubscribe_users_status: ['void', ['pointer', 'string', 'string']],
-      get_subscribe_users_status: ['void', ['pointer', 'string']],
-      get_user_status: ['void', ['pointer', 'string', 'string']],
-      // Friend functions
-      get_specified_friends_info: ['void', ['pointer', 'string', 'string']],
-      get_friend_list: ['void', ['pointer', 'string']],
-      get_friend_list_page: ['void', ['pointer', 'string', 'int', 'int']],
-      search_friends: ['void', ['pointer', 'string', 'string']],
-      check_friend: ['void', ['pointer', 'string', 'string']],
-      add_friend: ['void', ['pointer', 'string', 'string']],
-      set_friend_remark: ['void', ['pointer', 'string', 'string']],
-      delete_friend: ['void', ['pointer', 'string', 'string']],
-      get_friend_application_list_as_recipient: ['void', ['pointer', 'string']],
-      get_friend_application_list_as_applicant: ['void', ['pointer', 'string']],
-      accept_friend_application: ['void', ['pointer', 'string', 'string']],
-      refuse_friend_application: ['void', ['pointer', 'string', 'string']],
-      add_black: ['void', ['pointer', 'string', 'string']],
-      get_black_list: ['void', ['pointer', 'string']],
-      remove_black: ['void', ['pointer', 'string', 'string']],
-      // Group functions
-      create_group: ['void', ['pointer', 'string', 'string']],
-      join_group: ['void', ['pointer', 'string', 'string', 'string', 'int']],
-      quit_group: ['void', ['pointer', 'string', 'string']],
-      dismiss_group: ['void', ['pointer', 'string', 'string']],
-      change_group_mute: ['void', ['pointer', 'string', 'string', 'int']],
-      change_group_member_mute: [
-        'void',
-        ['pointer', 'string', 'string', 'string', 'int'],
-      ],
-      set_group_member_role_level: [
-        'void',
-        ['pointer', 'string', 'string', 'string', 'int'],
-      ],
-      set_group_member_info: ['void', ['pointer', 'string', 'string']],
-      get_joined_group_list: ['void', ['pointer', 'string']],
-      get_specified_groups_info: ['void', ['pointer', 'string', 'string']],
-      search_groups: ['void', ['pointer', 'string', 'string']],
-      set_group_info: ['void', ['pointer', 'string', 'string']],
-      set_group_verification: ['void', ['pointer', 'string', 'string', 'int']],
-      set_group_look_member_info: [
-        'void',
-        ['pointer', 'string', 'string', 'int'],
-      ],
-      set_group_apply_member_friend: [
-        'void',
-        ['pointer', 'string', 'string', 'int'],
-      ],
-      get_group_member_list: [
-        'void',
-        ['pointer', 'string', 'string', 'int', 'int', 'int'],
-      ],
-      get_group_member_owner_and_admin: [
-        'void',
-        ['pointer', 'string', 'string'],
-      ],
-      get_group_member_list_by_join_time_filter: [
-        'void',
-        [
-          'pointer',
-          'string',
-          'string',
-          'int',
-          'int',
-          'long long',
-          'long long',
-          'string',
-        ],
-      ],
-      get_specified_group_members_info: [
-        'void',
-        ['pointer', 'string', 'string', 'string'],
-      ],
-      kick_group_member: [
-        'void',
-        ['pointer', 'string', 'string', 'string', 'string'],
-      ],
-      transfer_group_owner: ['void', ['pointer', 'string', 'string', 'string']],
-      invite_user_to_group: [
-        'void',
-        ['pointer', 'string', 'string', 'string', 'string'],
-      ],
-      get_group_application_list_as_recipient: ['void', ['pointer', 'string']],
-      get_group_application_list_as_applicant: ['void', ['pointer', 'string']],
-      accept_group_application: [
-        'void',
-        ['pointer', 'string', 'string', 'string', 'string'],
-      ],
-      refuse_group_application: [
-        'void',
-        ['pointer', 'string', 'string', 'string', 'string'],
-      ],
-      set_group_member_nickname: [
-        'void',
-        ['pointer', 'string', 'string', 'string', 'string'],
-      ],
-      search_group_members: ['void', ['pointer', 'string', 'string']],
-      is_join_group: ['void', ['pointer', 'string', 'string']],
-    }) as LibOpenIMSDK;
-
-    // eslint-disable-next-line
-    const emitFn = emitProxy ?? this.emit;
-    this.listenerCallback = ffi.Callback(
+    this.lib = koffi.load(libPath);
+    this.baseCallbackProto = koffi.proto('__stdcall', 'baseCallback', 'void', [
+      'str',
+      'int',
+      'str',
+      'str',
+    ]);
+    this.sendMessageCallbackProto = koffi.proto(
+      '__stdcall',
+      'sendMessageCallback',
       'void',
-      ['int', 'string'],
-      (event: NativeEvent, data) => {
+      ['str', 'int', 'str', 'str', 'int']
+    );
+    const listenerCallbackProto = koffi.proto(
+      '__stdcall',
+      'listenerCallback',
+      'void',
+      ['int', 'str']
+    );
+
+    if (emitProxy) {
+      // @ts-ignore eslint-disable-next-line
+      this.emit = emitProxy;
+    }
+
+    this.listenerCallback = koffi.register(
+      (event: NativeEvent, data: string) => {
         const cbEvent = eventMapping[event];
-        emitFn(cbEvent, this.generateEventResponse(data));
+        this.emit(cbEvent, this.generateEventResponse(data));
         console.log(`listener callback - Event: ${cbEvent}, Data: ${data}`);
-      }
+      },
+      koffi.pointer(listenerCallbackProto)
+    );
+
+    this.libOpenIMSDK.set_group_listener = this.lib.func(
+      '__stdcall',
+      'set_group_listener',
+      'void',
+      ['listenerCallback *']
+    );
+    this.libOpenIMSDK.set_conversation_listener = this.lib.func(
+      '__stdcall',
+      'set_conversation_listener',
+      'void',
+      ['listenerCallback *']
+    );
+    this.libOpenIMSDK.set_advanced_msg_listener = this.lib.func(
+      '__stdcall',
+      'set_advanced_msg_listener',
+      'void',
+      ['listenerCallback *']
+    );
+    this.libOpenIMSDK.set_batch_msg_listener = this.lib.func(
+      '__stdcall',
+      'set_batch_msg_listener',
+      'void',
+      ['listenerCallback *']
+    );
+    this.libOpenIMSDK.set_user_listener = this.lib.func(
+      '__stdcall',
+      'set_user_listener',
+      'void',
+      ['listenerCallback *']
+    );
+    this.libOpenIMSDK.set_friend_listener = this.lib.func(
+      '__stdcall',
+      'set_friend_listener',
+      'void',
+      ['listenerCallback *']
+    );
+    this.libOpenIMSDK.set_custom_business_listener = this.lib.func(
+      '__stdcall',
+      'set_custom_business_listener',
+      'void',
+      ['listenerCallback *']
+    );
+    this.libOpenIMSDK.init_sdk = this.lib.func(
+      '__stdcall',
+      'init_sdk',
+      'uint8',
+      ['listenerCallback *', 'str', 'str']
+    );
+    this.libOpenIMSDK.un_init_sdk = this.lib.func(
+      '__stdcall',
+      'un_init_sdk',
+      'void',
+      ['str']
+    );
+    this.libOpenIMSDK.login = this.lib.func('__stdcall', 'login', 'void', [
+      'baseCallback *',
+      'str',
+      'str',
+      'str',
+    ]);
+    this.libOpenIMSDK.logout = this.lib.func('__stdcall', 'logout', 'void', [
+      'baseCallback *',
+      'str',
+    ]);
+    this.libOpenIMSDK.set_app_background_status = this.lib.func(
+      '__stdcall',
+      'set_app_background_status',
+      'void',
+      ['baseCallback *', 'str', 'int']
+    );
+    this.libOpenIMSDK.network_status_changed = this.lib.func(
+      '__stdcall',
+      'network_status_changed',
+      'void',
+      ['baseCallback *', 'str']
+    );
+    this.libOpenIMSDK.get_login_status = this.lib.func(
+      '__stdcall',
+      'get_login_status',
+      'int',
+      ['str']
+    );
+    this.libOpenIMSDK.get_login_user = this.lib.func(
+      '__stdcall',
+      'get_login_user',
+      'str',
+      []
+    );
+    this.libOpenIMSDK.create_text_message = this.lib.func(
+      '__stdcall',
+      'create_text_message',
+      'str',
+      ['str', 'str']
+    );
+    this.libOpenIMSDK.create_advanced_text_message = this.lib.func(
+      '__stdcall',
+      'create_advanced_text_message',
+      'str',
+      ['str', 'str', 'str']
+    );
+    this.libOpenIMSDK.create_text_at_message = this.lib.func(
+      '__stdcall',
+      'create_text_at_message',
+      'str',
+      ['str', 'str', 'str', 'str', 'str']
+    );
+    this.libOpenIMSDK.create_location_message = this.lib.func(
+      '__stdcall',
+      'create_location_message',
+      'str',
+      ['str', 'str', 'double', 'double']
+    );
+    this.libOpenIMSDK.create_custom_message = this.lib.func(
+      '__stdcall',
+      'create_custom_message',
+      'str',
+      ['str', 'str', 'str', 'str']
+    );
+    this.libOpenIMSDK.create_quote_message = this.lib.func(
+      '__stdcall',
+      'create_quote_message',
+      'str',
+      ['str', 'str', 'str']
+    );
+    this.libOpenIMSDK.create_advanced_quote_message = this.lib.func(
+      '__stdcall',
+      'create_advanced_quote_message',
+      'str',
+      ['str', 'str', 'str', 'str']
+    );
+    this.libOpenIMSDK.create_card_message = this.lib.func(
+      '__stdcall',
+      'create_card_message',
+      'str',
+      ['str', 'str']
+    );
+    this.libOpenIMSDK.create_video_message_from_full_path = this.lib.func(
+      '__stdcall',
+      'create_video_message_from_full_path',
+      'str',
+      ['str', 'str', 'str', 'long long', 'str']
+    );
+    this.libOpenIMSDK.create_image_message_from_full_path = this.lib.func(
+      '__stdcall',
+      'create_image_message_from_full_path',
+      'str',
+      ['str', 'str']
+    );
+    this.libOpenIMSDK.create_sound_message_from_full_path = this.lib.func(
+      '__stdcall',
+      'create_sound_message_from_full_path',
+      'str',
+      ['str', 'str', 'long long']
+    );
+    this.libOpenIMSDK.create_file_message_from_full_path = this.lib.func(
+      '__stdcall',
+      'create_file_message_from_full_path',
+      'str',
+      ['str', 'str', 'str']
+    );
+    this.libOpenIMSDK.create_image_message = this.lib.func(
+      '__stdcall',
+      'create_image_message',
+      'str',
+      ['str', 'str']
+    );
+    this.libOpenIMSDK.create_image_message_by_url = this.lib.func(
+      '__stdcall',
+      'create_image_message_by_url',
+      'str',
+      ['str', 'str', 'str', 'str', 'str']
+    );
+    this.libOpenIMSDK.create_sound_message_by_url = this.lib.func(
+      '__stdcall',
+      'create_sound_message_by_url',
+      'str',
+      ['str', 'str']
+    );
+    this.libOpenIMSDK.create_sound_message = this.lib.func(
+      '__stdcall',
+      'create_sound_message',
+      'str',
+      ['str', 'str', 'long long']
+    );
+    this.libOpenIMSDK.create_video_message_by_url = this.lib.func(
+      '__stdcall',
+      'create_video_message_by_url',
+      'str',
+      ['str', 'str']
+    );
+    this.libOpenIMSDK.create_video_message = this.lib.func(
+      '__stdcall',
+      'create_video_message',
+      'str',
+      ['str', 'str', 'str', 'long long', 'str']
+    );
+    this.libOpenIMSDK.create_file_message_by_url = this.lib.func(
+      '__stdcall',
+      'create_file_message_by_url',
+      'str',
+      ['str', 'str']
+    );
+    this.libOpenIMSDK.create_file_message = this.lib.func(
+      '__stdcall',
+      'create_file_message',
+      'str',
+      ['str', 'str', 'str']
+    );
+    this.libOpenIMSDK.create_merger_message = this.lib.func(
+      '__stdcall',
+      'create_merger_message',
+      'str',
+      ['str', 'str', 'str', 'str']
+    );
+    this.libOpenIMSDK.create_face_message = this.lib.func(
+      '__stdcall',
+      'create_face_message',
+      'str',
+      ['str', 'int', 'str']
+    );
+    this.libOpenIMSDK.create_forward_message = this.lib.func(
+      '__stdcall',
+      'create_forward_message',
+      'str',
+      ['str', 'str']
+    );
+    this.libOpenIMSDK.get_all_conversation_list = this.lib.func(
+      '__stdcall',
+      'get_all_conversation_list',
+      'void',
+      ['baseCallback *', 'str']
+    );
+    this.libOpenIMSDK.get_conversation_list_split = this.lib.func(
+      '__stdcall',
+      'get_conversation_list_split',
+      'void',
+      ['baseCallback *', 'str', 'int', 'int']
+    );
+    this.libOpenIMSDK.get_one_conversation = this.lib.func(
+      '__stdcall',
+      'get_one_conversation',
+      'void',
+      ['baseCallback *', 'str', 'int', 'str']
+    );
+    this.libOpenIMSDK.get_multiple_conversation = this.lib.func(
+      '__stdcall',
+      'get_multiple_conversation',
+      'void',
+      ['baseCallback *', 'str', 'str']
+    );
+    this.libOpenIMSDK.set_conversation_msg_destruct_time = this.lib.func(
+      '__stdcall',
+      'set_conversation_msg_destruct_time',
+      'void',
+      ['baseCallback *', 'str', 'str', 'long long']
+    );
+    this.libOpenIMSDK.set_conversation_is_msg_destruct = this.lib.func(
+      '__stdcall',
+      'set_conversation_is_msg_destruct',
+      'void',
+      ['baseCallback *', 'str', 'str', 'int']
+    );
+    this.libOpenIMSDK.hide_conversation = this.lib.func(
+      '__stdcall',
+      'hide_conversation',
+      'void',
+      ['baseCallback *', 'str', 'str']
+    );
+    this.libOpenIMSDK.get_conversation_recv_message_opt = this.lib.func(
+      '__stdcall',
+      'get_conversation_recv_message_opt',
+      'void',
+      ['baseCallback *', 'str', 'str']
+    );
+    this.libOpenIMSDK.set_conversation_draft = this.lib.func(
+      '__stdcall',
+      'set_conversation_draft',
+      'void',
+      ['baseCallback *', 'str', 'str', 'str']
+    );
+    this.libOpenIMSDK.reset_conversation_group_at_type = this.lib.func(
+      '__stdcall',
+      'reset_conversation_group_at_type',
+      'void',
+      ['baseCallback *', 'str', 'str']
+    );
+    this.libOpenIMSDK.pin_conversation = this.lib.func(
+      '__stdcall',
+      'pin_conversation',
+      'void',
+      ['baseCallback *', 'str', 'str', 'int']
+    );
+    this.libOpenIMSDK.set_conversation_private_chat = this.lib.func(
+      '__stdcall',
+      'set_conversation_private_chat',
+      'void',
+      ['baseCallback *', 'str', 'str', 'int']
+    );
+    this.libOpenIMSDK.set_conversation_burn_duration = this.lib.func(
+      '__stdcall',
+      'set_conversation_burn_duration',
+      'void',
+      ['baseCallback *', 'str', 'str', 'int']
+    );
+    this.libOpenIMSDK.set_conversation_recv_message_opt = this.lib.func(
+      '__stdcall',
+      'set_conversation_recv_message_opt',
+      'void',
+      ['baseCallback *', 'str', 'str', 'int']
+    );
+    this.libOpenIMSDK.get_total_unread_msg_count = this.lib.func(
+      '__stdcall',
+      'get_total_unread_msg_count',
+      'void',
+      ['baseCallback *', 'str']
+    );
+    this.libOpenIMSDK.get_at_all_tag = this.lib.func(
+      '__stdcall',
+      'get_at_all_tag',
+      'str',
+      ['str']
+    );
+    this.libOpenIMSDK.get_conversation_id_by_session_type = this.lib.func(
+      '__stdcall',
+      'get_conversation_id_by_session_type',
+      'str',
+      ['str', 'str', 'int']
+    );
+    this.libOpenIMSDK.send_message = this.lib.func(
+      '__stdcall',
+      'send_message',
+      'void',
+      ['sendMessageCallback *', 'str', 'str', 'str', 'str', 'str']
+    );
+    this.libOpenIMSDK.send_message_not_oss = this.lib.func(
+      '__stdcall',
+      'send_message_not_oss',
+      'void',
+      ['sendMessageCallback *', 'str', 'str', 'str', 'str', 'str']
+    );
+    this.libOpenIMSDK.find_message_list = this.lib.func(
+      '__stdcall',
+      'find_message_list',
+      'void',
+      ['baseCallback *', 'str', 'str']
+    );
+    this.libOpenIMSDK.get_advanced_history_message_list = this.lib.func(
+      '__stdcall',
+      'get_advanced_history_message_list',
+      'void',
+      ['baseCallback *', 'str', 'str']
+    );
+    this.libOpenIMSDK.get_advanced_history_message_list_reverse = this.lib.func(
+      '__stdcall',
+      'get_advanced_history_message_list_reverse',
+      'void',
+      ['baseCallback *', 'str', 'str']
+    );
+    this.libOpenIMSDK.revoke_message = this.lib.func(
+      '__stdcall',
+      'revoke_message',
+      'void',
+      ['baseCallback *', 'str', 'str', 'str']
+    );
+    this.libOpenIMSDK.typing_status_update = this.lib.func(
+      '__stdcall',
+      'typing_status_update',
+      'void',
+      ['baseCallback *', 'str', 'str', 'str']
+    );
+    this.libOpenIMSDK.mark_conversation_message_as_read = this.lib.func(
+      '__stdcall',
+      'mark_conversation_message_as_read',
+      'void',
+      ['baseCallback *', 'str', 'str']
+    );
+    this.libOpenIMSDK.delete_message_from_local_storage = this.lib.func(
+      '__stdcall',
+      'delete_message_from_local_storage',
+      'void',
+      ['baseCallback *', 'str', 'str', 'str']
+    );
+    this.libOpenIMSDK.delete_message = this.lib.func(
+      '__stdcall',
+      'delete_message',
+      'void',
+      ['baseCallback *', 'str', 'str', 'str']
+    );
+    this.libOpenIMSDK.hide_all_conversations = this.lib.func(
+      '__stdcall',
+      'hide_all_conversations',
+      'void',
+      ['baseCallback *', 'str']
+    );
+    this.libOpenIMSDK.delete_all_msg_from_local_and_svr = this.lib.func(
+      '__stdcall',
+      'delete_all_msg_from_local_and_svr',
+      'void',
+      ['baseCallback *', 'str']
+    );
+    this.libOpenIMSDK.delete_all_msg_from_local = this.lib.func(
+      '__stdcall',
+      'delete_all_msg_from_local',
+      'void',
+      ['baseCallback *', 'str']
+    );
+    this.libOpenIMSDK.clear_conversation_and_delete_all_msg = this.lib.func(
+      '__stdcall',
+      'clear_conversation_and_delete_all_msg',
+      'void',
+      ['baseCallback *', 'str', 'str']
+    );
+    this.libOpenIMSDK.delete_conversation_and_delete_all_msg = this.lib.func(
+      '__stdcall',
+      'delete_conversation_and_delete_all_msg',
+      'void',
+      ['baseCallback *', 'str', 'str']
+    );
+    this.libOpenIMSDK.insert_single_message_to_local_storage = this.lib.func(
+      '__stdcall',
+      'insert_single_message_to_local_storage',
+      'void',
+      ['baseCallback *', 'str', 'str', 'str', 'str']
+    );
+    this.libOpenIMSDK.insert_group_message_to_local_storage = this.lib.func(
+      '__stdcall',
+      'insert_group_message_to_local_storage',
+      'void',
+      ['baseCallback *', 'str', 'str', 'str', 'str']
+    );
+    this.libOpenIMSDK.search_local_messages = this.lib.func(
+      '__stdcall',
+      'search_local_messages',
+      'void',
+      ['baseCallback *', 'str', 'str']
+    );
+    this.libOpenIMSDK.set_message_local_ex = this.lib.func(
+      '__stdcall',
+      'set_message_local_ex',
+      'void',
+      ['baseCallback *', 'str', 'str', 'str', 'str']
+    );
+    this.libOpenIMSDK.get_users_info = this.lib.func(
+      '__stdcall',
+      'get_users_info',
+      'void',
+      ['baseCallback *', 'str', 'str']
+    );
+    this.libOpenIMSDK.get_users_info_with_cache = this.lib.func(
+      '__stdcall',
+      'get_users_info_with_cache',
+      'void',
+      ['baseCallback *', 'str', 'str', 'str']
+    );
+    this.libOpenIMSDK.set_self_info = this.lib.func(
+      '__stdcall',
+      'set_self_info',
+      'void',
+      ['baseCallback *', 'str', 'str']
+    );
+    this.libOpenIMSDK.set_global_recv_message_opt = this.lib.func(
+      '__stdcall',
+      'set_global_recv_message_opt',
+      'void',
+      ['baseCallback *', 'str', 'int']
+    );
+    this.libOpenIMSDK.get_self_user_info = this.lib.func(
+      '__stdcall',
+      'get_self_user_info',
+      'void',
+      ['baseCallback *', 'str']
+    );
+    this.libOpenIMSDK.subscribe_users_status = this.lib.func(
+      '__stdcall',
+      'subscribe_users_status',
+      'void',
+      ['baseCallback *', 'str', 'str']
+    );
+    this.libOpenIMSDK.unsubscribe_users_status = this.lib.func(
+      '__stdcall',
+      'unsubscribe_users_status',
+      'void',
+      ['baseCallback *', 'str', 'str']
+    );
+    this.libOpenIMSDK.get_subscribe_users_status = this.lib.func(
+      '__stdcall',
+      'get_subscribe_users_status',
+      'void',
+      ['baseCallback *', 'str']
+    );
+    this.libOpenIMSDK.get_user_status = this.lib.func(
+      '__stdcall',
+      'get_user_status',
+      'void',
+      ['baseCallback *', 'str', 'str']
+    );
+    // Friend functions
+    this.libOpenIMSDK.get_specified_friends_info = this.lib.func(
+      '__stdcall',
+      'get_specified_friends_info',
+      'void',
+      ['baseCallback *', 'str', 'str']
+    );
+    this.libOpenIMSDK.get_friend_list = this.lib.func(
+      '__stdcall',
+      'get_friend_list',
+      'void',
+      ['baseCallback *', 'str']
+    );
+    this.libOpenIMSDK.get_friend_list_page = this.lib.func(
+      '__stdcall',
+      'get_friend_list_page',
+      'void',
+      ['baseCallback *', 'str', 'int', 'int']
+    );
+    this.libOpenIMSDK.search_friends = this.lib.func(
+      '__stdcall',
+      'search_friends',
+      'void',
+      ['baseCallback *', 'str', 'str']
+    );
+    this.libOpenIMSDK.check_friend = this.lib.func(
+      '__stdcall',
+      'check_friend',
+      'void',
+      ['baseCallback *', 'str', 'str']
+    );
+    this.libOpenIMSDK.add_friend = this.lib.func(
+      '__stdcall',
+      'add_friend',
+      'void',
+      ['baseCallback *', 'str', 'str']
+    );
+    this.libOpenIMSDK.set_friend_remark = this.lib.func(
+      '__stdcall',
+      'set_friend_remark',
+      'void',
+      ['baseCallback *', 'str', 'str']
+    );
+    this.libOpenIMSDK.delete_friend = this.lib.func(
+      '__stdcall',
+      'delete_friend',
+      'void',
+      ['baseCallback *', 'str', 'str']
+    );
+    this.libOpenIMSDK.get_friend_application_list_as_recipient = this.lib.func(
+      '__stdcall',
+      'get_friend_application_list_as_recipient',
+      'void',
+      ['baseCallback *', 'str']
+    );
+    this.libOpenIMSDK.get_friend_application_list_as_applicant = this.lib.func(
+      '__stdcall',
+      'get_friend_application_list_as_applicant',
+      'void',
+      ['baseCallback *', 'str']
+    );
+    this.libOpenIMSDK.accept_friend_application = this.lib.func(
+      '__stdcall',
+      'accept_friend_application',
+      'void',
+      ['baseCallback *', 'str', 'str']
+    );
+    this.libOpenIMSDK.refuse_friend_application = this.lib.func(
+      '__stdcall',
+      'refuse_friend_application',
+      'void',
+      ['baseCallback *', 'str', 'str']
+    );
+    this.libOpenIMSDK.add_black = this.lib.func(
+      '__stdcall',
+      'add_black',
+      'void',
+      ['baseCallback *', 'str', 'str']
+    );
+    this.libOpenIMSDK.get_black_list = this.lib.func(
+      '__stdcall',
+      'get_black_list',
+      'void',
+      ['baseCallback *', 'str']
+    );
+    this.libOpenIMSDK.remove_black = this.lib.func(
+      '__stdcall',
+      'remove_black',
+      'void',
+      ['baseCallback *', 'str', 'str']
+    );
+    // Group functions
+    this.libOpenIMSDK.create_group = this.lib.func(
+      '__stdcall',
+      'create_group',
+      'void',
+      ['baseCallback *', 'str', 'str']
+    );
+    this.libOpenIMSDK.join_group = this.lib.func(
+      '__stdcall',
+      'join_group',
+      'void',
+      ['baseCallback *', 'str', 'str', 'str', 'int']
+    );
+    this.libOpenIMSDK.quit_group = this.lib.func(
+      '__stdcall',
+      'quit_group',
+      'void',
+      ['baseCallback *', 'str', 'str']
+    );
+    this.libOpenIMSDK.dismiss_group = this.lib.func(
+      '__stdcall',
+      'dismiss_group',
+      'void',
+      ['baseCallback *', 'str', 'str']
+    );
+    this.libOpenIMSDK.change_group_mute = this.lib.func(
+      '__stdcall',
+      'change_group_mute',
+      'void',
+      ['baseCallback *', 'str', 'str', 'int']
+    );
+    this.libOpenIMSDK.change_group_member_mute = this.lib.func(
+      '__stdcall',
+      'change_group_member_mute',
+      'void',
+      ['baseCallback *', 'str', 'str', 'str', 'int']
+    );
+    this.libOpenIMSDK.set_group_member_role_level = this.lib.func(
+      '__stdcall',
+      'set_group_member_role_level',
+      'void',
+      ['baseCallback *', 'str', 'str', 'str', 'int']
+    );
+    this.libOpenIMSDK.set_group_member_info = this.lib.func(
+      '__stdcall',
+      'set_group_member_info',
+      'void',
+      ['baseCallback *', 'str', 'str']
+    );
+    this.libOpenIMSDK.get_joined_group_list = this.lib.func(
+      '__stdcall',
+      'get_joined_group_list',
+      'void',
+      ['baseCallback *', 'str']
+    );
+    this.libOpenIMSDK.get_specified_groups_info = this.lib.func(
+      '__stdcall',
+      'get_specified_groups_info',
+      'void',
+      ['baseCallback *', 'str', 'str']
+    );
+    this.libOpenIMSDK.search_groups = this.lib.func(
+      '__stdcall',
+      'search_groups',
+      'void',
+      ['baseCallback *', 'str', 'str']
+    );
+    this.libOpenIMSDK.set_group_info = this.lib.func(
+      '__stdcall',
+      'set_group_info',
+      'void',
+      ['baseCallback *', 'str', 'str']
+    );
+    this.libOpenIMSDK.get_group_member_list = this.lib.func(
+      '__stdcall',
+      'get_group_member_list',
+      'void',
+      ['baseCallback *', 'str', 'str', 'int', 'int', 'int']
+    );
+    this.libOpenIMSDK.get_group_member_owner_and_admin = this.lib.func(
+      '__stdcall',
+      'get_group_member_owner_and_admin',
+      'void',
+      ['baseCallback *', 'str', 'str']
+    );
+    this.libOpenIMSDK.get_group_member_list_by_join_time_filter = this.lib.func(
+      '__stdcall',
+      'get_group_member_list_by_join_time_filter',
+      'void',
+      [
+        'baseCallback *',
+        'str',
+        'str',
+        'int',
+        'int',
+        'long long',
+        'long long',
+        'str',
+      ]
+    );
+    this.libOpenIMSDK.get_specified_group_members_info = this.lib.func(
+      '__stdcall',
+      'get_specified_group_members_info',
+      'void',
+      ['baseCallback *', 'str', 'str', 'str']
+    );
+    this.libOpenIMSDK.kick_group_member = this.lib.func(
+      '__stdcall',
+      'kick_group_member',
+      'void',
+      ['baseCallback *', 'str', 'str', 'str', 'str']
+    );
+    this.libOpenIMSDK.transfer_group_owner = this.lib.func(
+      '__stdcall',
+      'transfer_group_owner',
+      'void',
+      ['baseCallback *', 'str', 'str', 'str']
+    );
+    this.libOpenIMSDK.invite_user_to_group = this.lib.func(
+      '__stdcall',
+      'invite_user_to_group',
+      'void',
+      ['baseCallback *', 'str', 'str', 'str', 'str']
+    );
+    this.libOpenIMSDK.get_group_application_list_as_recipient = this.lib.func(
+      '__stdcall',
+      'get_group_application_list_as_recipient',
+      'void',
+      ['baseCallback *', 'str']
+    );
+    this.libOpenIMSDK.get_group_application_list_as_applicant = this.lib.func(
+      '__stdcall',
+      'get_group_application_list_as_applicant',
+      'void',
+      ['baseCallback *', 'str']
+    );
+    this.libOpenIMSDK.accept_group_application = this.lib.func(
+      '__stdcall',
+      'accept_group_application',
+      'void',
+      ['baseCallback *', 'str', 'str', 'str', 'str']
+    );
+    this.libOpenIMSDK.refuse_group_application = this.lib.func(
+      '__stdcall',
+      'refuse_group_application',
+      'void',
+      ['baseCallback *', 'str', 'str', 'str', 'str']
+    );
+    this.libOpenIMSDK.search_group_members = this.lib.func(
+      '__stdcall',
+      'search_group_members',
+      'void',
+      ['baseCallback *', 'str', 'str']
+    );
+    this.libOpenIMSDK.is_join_group = this.lib.func(
+      '__stdcall',
+      'is_join_group',
+      'int',
+      ['baseCallback *', 'str', 'str']
     );
 
     Object.assign(this, setupUserModule(this));
@@ -334,7 +831,7 @@ class OpenIMSDK
     Object.assign(this, setupMessageModule(this));
   }
 
-  generateEventResponse = (data: unknown): BaseResponse => {
+  generateEventResponse = (data: unknown, operationID = ''): BaseResponse => {
     let errCode = 0;
     let errMsg = '';
     try {
@@ -355,18 +852,20 @@ class OpenIMSDK
       errCode,
       errMsg,
       data,
-      operationID: '',
+      operationID,
     };
   };
 
   baseCallbackWrap = <T>(
     resolve: (response: BaseResponse<T>) => void,
     reject: (response: BaseResponse<T>) => void
-  ) =>
-    ffi.Callback(
-      'void',
-      ['string', 'int', 'string', 'string'],
-      (operationID, errCode: number, errMsg, data) => {
+  ) => {
+    const registerBaseCallback = koffi.register(
+      (operationID: string, errCode: number, errMsg: string, data: string) => {
+        console.log(
+          `base callback - operationID: ${operationID}, errCode: ${errCode}, errMsg: ${errMsg}, data: ${data}`
+        );
+
         let realData;
         try {
           realData = JSON.parse(data);
@@ -384,8 +883,60 @@ class OpenIMSDK
         } else {
           reject(response);
         }
-      }
+        koffi.unregister(registerBaseCallback);
+      },
+      koffi.pointer(this.baseCallbackProto)
     );
+    return registerBaseCallback;
+  };
+
+  sendMessageCallbackWrap = <T>(
+    resolve: (response: BaseResponse<T>) => void,
+    reject: (response: BaseResponse<T>) => void
+  ) => {
+    const registerSendMessageCallback = koffi.register(
+      (
+        operationID: string,
+        errCode: number,
+        errMsg: string,
+        data: string,
+        progress: number
+      ) => {
+        console.log(
+          `send message callback - operationID: ${operationID}, errCode: ${errCode}, errMsg: ${errMsg}, data: ${data}, progress: ${progress}`
+        );
+
+        let realData;
+        try {
+          realData = JSON.parse(data);
+        } catch (error) {
+          realData = data;
+        }
+        const response: BaseResponse<T> = {
+          errCode,
+          errMsg,
+          data: realData,
+          operationID,
+        };
+        if (!errCode && !errMsg && !data) {
+          // eslint-disable-next-line
+          this.emit(
+            CbEvents.OnProgress,
+            this.generateEventResponse(progress, operationID)
+          );
+          return;
+        }
+        if (errCode === 0) {
+          resolve(response);
+        } else {
+          reject(response);
+        }
+        koffi.unregister(registerSendMessageCallback);
+      },
+      koffi.pointer(this.sendMessageCallbackProto)
+    );
+    return registerSendMessageCallback;
+  };
 
   asyncRetunWrap = <T>(operationID: string, data: unknown) =>
     new Promise<BaseResponse<T>>((resolve, reject) => {
@@ -495,6 +1046,10 @@ class OpenIMSDK
   checkFriend!: FriendModuleApi['checkFriend'];
   deleteFriend!: FriendModuleApi['deleteFriend'];
   getBlackList!: FriendModuleApi['getBlackList'];
+  setFriendsEx!: (
+    params: SetFriendExParams,
+    opid?: string | undefined
+  ) => Promise<BaseResponse<void>>;
   getFriendApplicationListAsApplicant!: FriendModuleApi['getFriendApplicationListAsApplicant'];
   getFriendApplicationListAsRecipient!: FriendModuleApi['getFriendApplicationListAsRecipient'];
   getFriendList!: FriendModuleApi['getFriendList'];
@@ -533,6 +1088,10 @@ class OpenIMSDK
   getAllConversationList!: ConversationModuleApi['getAllConversationList'];
   getConversationListSplit!: ConversationModuleApi['getConversationListSplit'];
   getOneConversation!: ConversationModuleApi['getOneConversation'];
+  setConversationEx!: (
+    params: SetConversationExParams,
+    opid?: string | undefined
+  ) => Promise<BaseResponse<void>>;
   getMultipleConversation!: ConversationModuleApi['getMultipleConversation'];
   getConversationIDBySessionType!: ConversationModuleApi['getConversationIDBySessionType'];
   getTotalUnreadMsgCount!: ConversationModuleApi['getTotalUnreadMsgCount'];

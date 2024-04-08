@@ -1,24 +1,11 @@
 // libOpenIMSDK.d.ts
 declare module 'libOpenIMSDK' {
-  export type CB_S = Buffer | ((data: string) => void);
-  export type CB_I_S = Buffer | ((event: number, data: string) => void);
-  export type CB_S_I_S_S =
-    | Buffer
-    | ((
-        operationID: string,
-        errCode: number,
-        errMsg: string,
-        data: string
-      ) => void);
-  export type CB_S_I_S_S_I =
-    | Buffer
-    | ((
-        operationID: string,
-        errCode: number,
-        errMsg: string,
-        data: string,
-        progress: number
-      ) => void);
+  import { IKoffiRegisteredCallback } from 'koffi';
+
+  export type CB_S = IKoffiRegisteredCallback;
+  export type CB_I_S = IKoffiRegisteredCallback;
+  export type CB_S_I_S_S = IKoffiRegisteredCallback;
+  export type CB_S_I_S_S_I = IKoffiRegisteredCallback;
 
   export interface LibOpenIMSDK {
     set_group_listener(cCallback: CB_I_S): void;
@@ -232,6 +219,12 @@ declare module 'libOpenIMSDK' {
       operationID: string
     ): void;
     get_at_all_tag(operationID: string): string;
+    set_conversation_ex(
+      cCallback: CB_S_I_S_S,
+      operationID: string,
+      conversationID: string,
+      ex: string
+    ): void;
     get_conversation_id_by_session_type(
       operationID: string,
       sourceID: string,
@@ -243,7 +236,8 @@ declare module 'libOpenIMSDK' {
       message: string,
       recvID: string,
       groupID: string,
-      offlinePushInfo: string
+      offlinePushInfo: string,
+      isOnlineOnly: boolean
     ): void;
     send_message_not_oss(
       cCallback: CB_S_I_S_S_I,
@@ -251,7 +245,8 @@ declare module 'libOpenIMSDK' {
       message: string,
       recvID: string,
       groupID: string,
-      offlinePushInfo: string
+      offlinePushInfo: string,
+      isOnlineOnly: boolean
     ): void;
     find_message_list(
       cCallback: CB_S_I_S_S,
@@ -409,6 +404,12 @@ declare module 'libOpenIMSDK' {
       operationID: string,
       searchParam: string
     ): void;
+    set_friends_ex(
+      cCallback: CB_S_I_S_S,
+      operationID: string,
+      toUserIDs: string,
+      ex: string
+    ): void;
     check_friend(
       cCallback: CB_S_I_S_S,
       operationID: string,
@@ -450,7 +451,8 @@ declare module 'libOpenIMSDK' {
     add_black(
       cCallback: CB_S_I_S_S,
       operationID: string,
-      blackUserID: string
+      blackUserID: string,
+      ex: string
     ): void;
     get_black_list(cCallback: CB_S_I_S_S, operationID: string): void;
     remove_black(
@@ -469,7 +471,8 @@ declare module 'libOpenIMSDK' {
       operationID: string,
       cGroupID: string,
       cReqMsg: string,
-      cJoinSource: number
+      cJoinSource: number,
+      ex: string
     ): void;
     quit_group(
       cCallback: CB_S_I_S_S,

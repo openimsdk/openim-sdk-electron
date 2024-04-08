@@ -1,4 +1,4 @@
-import { CbEvents } from '@/constant/callback';
+import { CbEvents } from 'open-im-sdk-wasm';
 
 interface Events {
   [key: string]: Cbfn[];

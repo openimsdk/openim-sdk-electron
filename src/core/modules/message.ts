@@ -1,34 +1,36 @@
 import { v4 as uuidV4 } from 'uuid';
 import OpenIMSDK from '..';
+import { BaseResponse } from '@/types/entity';
 import {
-  AdvancedGetMessageResult,
-  BaseResponse,
-  CardElem,
   MessageItem,
-} from '@/types/entity';
+  CardElem,
+  AdvancedGetMessageResult,
+} from 'open-im-sdk-wasm/lib/types/entity';
 import {
   AtMsgParams,
+  LocationMsgParams,
   CustomMsgParams,
+  QuoteMsgParams,
+  MergerMsgParams,
   FaceMessageParams,
-  FileMsgByPathParams,
-  FileMsgByUrlParams,
-  FindMessageParams,
+  SendMsgParams,
+  TypingUpdateParams,
+  SearchLocalParams,
   GetAdvancedHistoryMsgParams,
-  ImageMsgByUrlParams,
+  FindMessageParams,
   InsertGroupMsgParams,
   InsertSingleMsgParams,
-  LocationMsgParams,
-  MergerMsgParams,
-  OpreateMessageParams,
-  QuoteMsgParams,
-  SearchLocalParams,
-  SendMsgParams,
   SetMessageLocalExParams,
-  SoundMsgByPathParams,
-  SoundMsgByUrlParams,
-  TypingUpdateParams,
+  AccessMessageParams,
+  ImageMsgParamsByURL,
+  VideoMsgParamsByURL,
+  FileMsgParamsByURL,
+  SoundMsgParamsByURL,
+} from 'open-im-sdk-wasm/lib/types/params';
+import {
   VideoMsgByPathParams,
-  VideoMsgByUrlParams,
+  SoundMsgByPathParams,
+  FileMsgByPathParams,
 } from '@/types/params';
 
 export function setupMessageModule(openIMSDK: OpenIMSDK) {
@@ -134,7 +136,7 @@ export function setupMessageModule(openIMSDK: OpenIMSDK) {
         )
       ),
 
-    createImageMessageByUrl: (params: ImageMsgByUrlParams, opid = uuidV4()) =>
+    createImageMessageByUrl: (params: ImageMsgParamsByURL, opid = uuidV4()) =>
       openIMSDK.asyncRetunWrap<MessageItem>(
         opid,
         openIMSDK.libOpenIMSDK.create_image_message_by_url(
@@ -173,7 +175,7 @@ export function setupMessageModule(openIMSDK: OpenIMSDK) {
         )
       ),
 
-    createVideoMessageByUrl: (params: VideoMsgByUrlParams, opid = uuidV4()) =>
+    createVideoMessageByUrl: (params: VideoMsgParamsByURL, opid = uuidV4()) =>
       openIMSDK.asyncRetunWrap<MessageItem>(
         opid,
         openIMSDK.libOpenIMSDK.create_video_message_by_url(
@@ -205,7 +207,7 @@ export function setupMessageModule(openIMSDK: OpenIMSDK) {
         )
       ),
 
-    createSoundMessageByUrl: (params: SoundMsgByUrlParams, opid = uuidV4()) =>
+    createSoundMessageByUrl: (params: SoundMsgParamsByURL, opid = uuidV4()) =>
       openIMSDK.asyncRetunWrap<MessageItem>(
         opid,
         openIMSDK.libOpenIMSDK.create_sound_message_by_url(
@@ -237,7 +239,7 @@ export function setupMessageModule(openIMSDK: OpenIMSDK) {
         )
       ),
 
-    createFileMessageByUrl: (params: FileMsgByUrlParams, opid = uuidV4()) =>
+    createFileMessageByUrl: (params: FileMsgParamsByURL, opid = uuidV4()) =>
       openIMSDK.asyncRetunWrap<MessageItem>(
         opid,
         openIMSDK.libOpenIMSDK.create_file_message_by_url(
@@ -256,12 +258,13 @@ export function setupMessageModule(openIMSDK: OpenIMSDK) {
           iOSBadgeCount: true,
         };
         openIMSDK.libOpenIMSDK.send_message(
-          openIMSDK.baseCallbackWrap<MessageItem>(resolve, reject),
+          openIMSDK.sendMessageCallbackWrap<MessageItem>(resolve, reject),
           opid,
           JSON.stringify(params.message),
           params.recvID,
           params.groupID,
-          JSON.stringify(offlinePushInfo)
+          JSON.stringify(offlinePushInfo),
+          params.isOnlineOnly ?? false
         );
       }),
 
@@ -275,12 +278,13 @@ export function setupMessageModule(openIMSDK: OpenIMSDK) {
           iOSBadgeCount: true,
         };
         openIMSDK.libOpenIMSDK.send_message_not_oss(
-          openIMSDK.baseCallbackWrap<MessageItem>(resolve, reject),
+          openIMSDK.sendMessageCallbackWrap<MessageItem>(resolve, reject),
           opid,
           JSON.stringify(params.message),
           params.recvID,
           params.groupID,
-          JSON.stringify(offlinePushInfo)
+          JSON.stringify(offlinePushInfo),
+          params.isOnlineOnly ?? false
         );
       }),
 
@@ -294,7 +298,7 @@ export function setupMessageModule(openIMSDK: OpenIMSDK) {
         );
       }),
 
-    revokeMessage: (params: OpreateMessageParams, opid = uuidV4()) =>
+    revokeMessage: (params: AccessMessageParams, opid = uuidV4()) =>
       new Promise<BaseResponse<void>>((resolve, reject) => {
         openIMSDK.libOpenIMSDK.revoke_message(
           openIMSDK.baseCallbackWrap<void>(resolve, reject),
@@ -304,7 +308,7 @@ export function setupMessageModule(openIMSDK: OpenIMSDK) {
         );
       }),
 
-    deleteMessage: (params: OpreateMessageParams, opid = uuidV4()) =>
+    deleteMessage: (params: AccessMessageParams, opid = uuidV4()) =>
       new Promise<BaseResponse<void>>((resolve, reject) => {
         openIMSDK.libOpenIMSDK.delete_message(
           openIMSDK.baseCallbackWrap<void>(resolve, reject),
@@ -315,7 +319,7 @@ export function setupMessageModule(openIMSDK: OpenIMSDK) {
       }),
 
     deleteMessageFromLocalStorage: (
-      params: OpreateMessageParams,
+      params: AccessMessageParams,
       opid = uuidV4()
     ) =>
       new Promise<BaseResponse<void>>((resolve, reject) => {
@@ -468,7 +472,7 @@ export interface MessageModuleApi {
     opid?: string
   ) => Promise<BaseResponse<MessageItem>>;
   createImageMessageByUrl: (
-    params: ImageMsgByUrlParams,
+    params: ImageMsgParamsByURL,
     opid?: string
   ) => Promise<BaseResponse<MessageItem>>;
   createVideoMessage: (
@@ -480,7 +484,7 @@ export interface MessageModuleApi {
     opid?: string
   ) => Promise<BaseResponse<MessageItem>>;
   createVideoMessageByUrl: (
-    params: VideoMsgByUrlParams,
+    params: VideoMsgParamsByURL,
     opid?: string
   ) => Promise<BaseResponse<MessageItem>>;
   createSoundMessage: (
@@ -492,7 +496,7 @@ export interface MessageModuleApi {
     opid?: string
   ) => Promise<BaseResponse<MessageItem>>;
   createSoundMessageByUrl: (
-    params: SoundMsgByUrlParams,
+    params: SoundMsgParamsByURL,
     opid?: string
   ) => Promise<BaseResponse<MessageItem>>;
   createFileMessage: (
@@ -504,7 +508,7 @@ export interface MessageModuleApi {
     opid?: string
   ) => Promise<BaseResponse<MessageItem>>;
   createFileMessageByUrl: (
-    params: FileMsgByUrlParams,
+    params: FileMsgParamsByURL,
     opid?: string
   ) => Promise<BaseResponse<MessageItem>>;
   sendMessage: (
@@ -520,15 +524,15 @@ export interface MessageModuleApi {
     opid?: string
   ) => Promise<BaseResponse<void>>;
   revokeMessage: (
-    params: OpreateMessageParams,
+    params: AccessMessageParams,
     opid?: string
   ) => Promise<BaseResponse<void>>;
   deleteMessage: (
-    params: OpreateMessageParams,
+    params: AccessMessageParams,
     opid?: string
   ) => Promise<BaseResponse<void>>;
   deleteMessageFromLocalStorage: (
-    params: OpreateMessageParams,
+    params: AccessMessageParams,
     opid?: string
   ) => Promise<BaseResponse<void>>;
   deleteAllMsgFromLocal: (opid?: string) => Promise<BaseResponse<void>>;

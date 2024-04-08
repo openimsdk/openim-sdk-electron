@@ -21,5 +21,24 @@ export default [
             alias(),
             typescript(),
         ]
+    },
+    {
+        input: 'src/render.ts',
+        output: [
+            {
+                file: 'lib/render.js',
+                format: 'cjs',
+                exports: 'auto',
+                sourcemap: false
+            },
+            {
+                file: 'lib/render.es.js',
+                format: 'esm',
+                sourcemap: false
+            }
+        ],
+        plugins: [
+            typescript(),
+        ]
     }
 ];

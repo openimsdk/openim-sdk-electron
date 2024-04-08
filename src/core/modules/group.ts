@@ -1,27 +1,25 @@
 import { v4 as uuidV4 } from 'uuid';
-import {
-  BaseResponse,
-  GroupApplicationItem,
-  GroupItem,
-  GroupMemberItem,
-} from '@/types/entity';
+import { BaseResponse } from '@/types/entity';
 import OpenIMSDK from '..';
+import {
+  GroupItem,
+  GroupApplicationItem,
+  GroupMemberItem,
+} from 'open-im-sdk-wasm/lib/types/entity';
 import {
   CreateGroupParams,
   JoinGroupParams,
-  OpreateGroupParams,
   SearchGroupParams,
-  SetGroupinfoParams,
-  AccessGroupParams,
+  AccessGroupApplicationParams,
   GetGroupMemberParams,
-  getGroupMembersInfoParams,
   SearchGroupMemberParams,
   UpdateMemberInfoParams,
   GetGroupMemberByTimeParams,
   ChangeGroupMemberMuteParams,
   ChangeGroupMuteParams,
   TransferGroupParams,
-} from '@/types/params';
+  AccessToGroupParams,
+} from 'open-im-sdk-wasm/lib/types/params';
 
 export function setupGroupModule(openIMSDK: OpenIMSDK) {
   return {
@@ -41,11 +39,12 @@ export function setupGroupModule(openIMSDK: OpenIMSDK) {
           opid,
           params.groupID,
           params.reqMsg,
-          params.joinSource
+          params.joinSource,
+          params.ex ?? ''
         );
       }),
 
-    inviteUserToGroup: (params: OpreateGroupParams, opid = uuidV4()) =>
+    inviteUserToGroup: (params: AccessToGroupParams, opid = uuidV4()) =>
       new Promise<BaseResponse<void>>((resolve, reject) => {
         openIMSDK.libOpenIMSDK.invite_user_to_group(
           openIMSDK.baseCallbackWrap<void>(resolve, reject),
@@ -82,7 +81,7 @@ export function setupGroupModule(openIMSDK: OpenIMSDK) {
         );
       }),
 
-    setGroupInfo: (params: SetGroupinfoParams, opid = uuidV4()) =>
+    setGroupInfo: (params: Partial<GroupItem>, opid = uuidV4()) =>
       new Promise<BaseResponse<void>>((resolve, reject) => {
         openIMSDK.libOpenIMSDK.set_group_info(
           openIMSDK.baseCallbackWrap<void>(resolve, reject),
@@ -107,7 +106,10 @@ export function setupGroupModule(openIMSDK: OpenIMSDK) {
         );
       }),
 
-    acceptGroupApplication: (params: AccessGroupParams, opid = uuidV4()) =>
+    acceptGroupApplication: (
+      params: AccessGroupApplicationParams,
+      opid = uuidV4()
+    ) =>
       new Promise<BaseResponse<void>>((resolve, reject) => {
         openIMSDK.libOpenIMSDK.accept_group_application(
           openIMSDK.baseCallbackWrap<void>(resolve, reject),
@@ -118,7 +120,10 @@ export function setupGroupModule(openIMSDK: OpenIMSDK) {
         );
       }),
 
-    refuseGroupApplication: (params: AccessGroupParams, opid = uuidV4()) =>
+    refuseGroupApplication: (
+      params: AccessGroupApplicationParams,
+      opid = uuidV4()
+    ) =>
       new Promise<BaseResponse<void>>((resolve, reject) => {
         openIMSDK.libOpenIMSDK.refuse_group_application(
           openIMSDK.baseCallbackWrap<void>(resolve, reject),
@@ -142,7 +147,7 @@ export function setupGroupModule(openIMSDK: OpenIMSDK) {
       }),
 
     getSpecifiedGroupMembersInfo: (
-      params: getGroupMembersInfoParams,
+      params: Omit<AccessToGroupParams, 'reason'>,
       opid = uuidV4()
     ) =>
       new Promise<BaseResponse<GroupMemberItem[]>>((resolve, reject) => {
@@ -198,7 +203,7 @@ export function setupGroupModule(openIMSDK: OpenIMSDK) {
         );
       }),
 
-    kickGroupMember: (params: OpreateGroupParams, opid = uuidV4()) =>
+    kickGroupMember: (params: AccessToGroupParams, opid = uuidV4()) =>
       new Promise<BaseResponse<void>>((resolve, reject) => {
         openIMSDK.libOpenIMSDK.kick_group_member(
           openIMSDK.baseCallbackWrap<void>(resolve, reject),
@@ -273,7 +278,7 @@ export interface GroupModuleApi {
     opid?: string
   ) => Promise<BaseResponse<void>>;
   inviteUserToGroup: (
-    params: OpreateGroupParams,
+    params: AccessToGroupParams,
     opid?: string
   ) => Promise<BaseResponse<void>>;
   getJoinedGroupList: (opid?: string) => Promise<BaseResponse<GroupItem[]>>;
@@ -286,7 +291,7 @@ export interface GroupModuleApi {
     opid?: string
   ) => Promise<BaseResponse<GroupItem[]>>;
   setGroupInfo: (
-    params: SetGroupinfoParams,
+    params: Partial<GroupItem>,
     opid?: string
   ) => Promise<BaseResponse<void>>;
   getGroupApplicationListAsRecipient: (
@@ -296,11 +301,11 @@ export interface GroupModuleApi {
     opid?: string
   ) => Promise<BaseResponse<GroupApplicationItem[]>>;
   acceptGroupApplication: (
-    params: AccessGroupParams,
+    params: AccessGroupApplicationParams,
     opid?: string
   ) => Promise<BaseResponse<void>>;
   refuseGroupApplication: (
-    params: AccessGroupParams,
+    params: AccessGroupApplicationParams,
     opid?: string
   ) => Promise<BaseResponse<void>>;
   getGroupMemberList: (
@@ -308,7 +313,7 @@ export interface GroupModuleApi {
     opid?: string
   ) => Promise<BaseResponse<GroupMemberItem[]>>;
   getSpecifiedGroupMembersInfo: (
-    params: getGroupMembersInfoParams,
+    params: Omit<AccessToGroupParams, 'reason'>,
     opid?: string
   ) => Promise<BaseResponse<GroupMemberItem[]>>;
   searchGroupMembers: (
@@ -328,7 +333,7 @@ export interface GroupModuleApi {
     opid?: string
   ) => Promise<BaseResponse<GroupMemberItem[]>>;
   kickGroupMember: (
-    params: OpreateGroupParams,
+    params: AccessToGroupParams,
     opid?: string
   ) => Promise<BaseResponse<void>>;
   changeGroupMemberMute: (

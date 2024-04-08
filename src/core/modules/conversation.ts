@@ -1,15 +1,17 @@
 import { v4 as uuidV4 } from 'uuid';
-import { BaseResponse, ConversationItem } from '@/types/entity';
+import { BaseResponse } from '@/types/entity';
 import OpenIMSDK from '..';
 import {
   SplitConversationParams,
   GetOneConversationParams,
   SetConversationDraftParams,
-  PinConversationParams,
+  SetConversationPinParams,
   SetConversationRecvOptParams,
-  SetConversationPrivateParams,
+  SetConversationPrivateStateParams,
   SetBurnDurationParams,
-} from '@/types/params';
+  SetConversationExParams,
+} from 'open-im-sdk-wasm/lib/types/params';
+import { ConversationItem } from 'open-im-sdk-wasm/lib/types/entity';
 
 export function setupConversationModule(openIMSDK: OpenIMSDK) {
   return {
@@ -39,6 +41,15 @@ export function setupConversationModule(openIMSDK: OpenIMSDK) {
           opid,
           params.sessionType,
           params.sourceID
+        );
+      }),
+    setConversationEx: (params: SetConversationExParams, opid = uuidV4()) =>
+      new Promise<BaseResponse<void>>((resolve, reject) => {
+        openIMSDK.libOpenIMSDK.set_conversation_ex(
+          openIMSDK.baseCallbackWrap<void>(resolve, reject),
+          opid,
+          params.conversationID,
+          params.ex
         );
       }),
     getMultipleConversation: (conversationIDList: string, opid = uuidV4()) =>
@@ -88,7 +99,7 @@ export function setupConversationModule(openIMSDK: OpenIMSDK) {
           params.draftText
         );
       }),
-    pinConversation: (params: PinConversationParams, opid = uuidV4()) =>
+    pinConversation: (params: SetConversationPinParams, opid = uuidV4()) =>
       new Promise<BaseResponse<void>>((resolve, reject) => {
         openIMSDK.libOpenIMSDK.pin_conversation(
           openIMSDK.baseCallbackWrap<void>(resolve, reject),
@@ -110,7 +121,7 @@ export function setupConversationModule(openIMSDK: OpenIMSDK) {
         );
       }),
     setConversationPrivateChat: (
-      params: SetConversationPrivateParams,
+      params: SetConversationPrivateStateParams,
       opid = uuidV4()
     ) =>
       new Promise<BaseResponse<void>>((resolve, reject) => {
@@ -193,6 +204,10 @@ export interface ConversationModuleApi {
     params: GetOneConversationParams,
     opid?: string
   ) => Promise<BaseResponse<ConversationItem>>;
+  setConversationEx: (
+    params: SetConversationExParams,
+    opid?: string
+  ) => Promise<BaseResponse<void>>;
   getMultipleConversation: (
     conversationIDList: string,
     opid?: string
@@ -207,11 +222,11 @@ export interface ConversationModuleApi {
     opid?: string
   ) => Promise<BaseResponse<void>>;
   setConversationDraft: (
-    params: SetConversationDraftParams,
+    params: SplitConversationParams,
     opid?: string
   ) => Promise<BaseResponse<void>>;
   pinConversation: (
-    params: PinConversationParams,
+    params: SplitConversationParams,
     opid?: string
   ) => Promise<BaseResponse<void>>;
   setConversationRecvMessageOpt: (
@@ -219,7 +234,7 @@ export interface ConversationModuleApi {
     opid?: string
   ) => Promise<BaseResponse<void>>;
   setConversationPrivateChat: (
-    params: SetConversationPrivateParams,
+    params: SetConversationPrivateStateParams,
     opid?: string
   ) => Promise<BaseResponse<void>>;
   setConversationBurnDuration: (

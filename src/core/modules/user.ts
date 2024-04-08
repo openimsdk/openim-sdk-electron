@@ -1,13 +1,16 @@
 import { v4 as uuidV4 } from 'uuid';
-import {
-  BaseResponse,
-  FullUserItemWithCache,
-  SelfUserInfo,
-  UserOnlineState,
-} from '@/types/entity';
+import { BaseResponse } from '@/types/entity';
 import OpenIMSDK from '..';
-import { GetUserInfoWithCacheParams, SetSelfInfoParams } from '@/types/params';
-import { MessageReceiveOptType } from '@/types/enum';
+import { MessageReceiveOptType } from 'open-im-sdk-wasm';
+import {
+  SelfUserInfo,
+  FullUserItemWithCache,
+  UserOnlineState,
+} from 'open-im-sdk-wasm/lib/types/entity';
+import {
+  GetUserInfoWithCacheParams,
+  PartialUserItem,
+} from 'open-im-sdk-wasm/lib/types/params';
 
 export function setupUserModule(openIMSDK: OpenIMSDK) {
   return {
@@ -19,7 +22,7 @@ export function setupUserModule(openIMSDK: OpenIMSDK) {
         );
       }),
 
-    setSelfInfo: (params: SetSelfInfoParams, opid = uuidV4()) =>
+    setSelfInfo: (params: PartialUserItem, opid = uuidV4()) =>
       new Promise<BaseResponse<void>>((resolve, reject) => {
         openIMSDK.libOpenIMSDK.set_self_info(
           openIMSDK.baseCallbackWrap<void>(resolve, reject),
@@ -84,7 +87,7 @@ export function setupUserModule(openIMSDK: OpenIMSDK) {
 export interface UserModuleApi {
   getSelfUserInfo: (opid?: string) => Promise<BaseResponse<SelfUserInfo>>;
   setSelfInfo: (
-    params: SetSelfInfoParams,
+    params: PartialUserItem,
     opid?: string
   ) => Promise<BaseResponse<void>>;
   getUsersInfoWithCache: (
