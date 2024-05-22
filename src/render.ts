@@ -93,6 +93,7 @@ type CreateElectronOptions = {
 };
 
 let wasmSDK: IMSDKInterface | undefined;
+let instance: IMSDKInterface | undefined;
 const sdkEmitter = new Emitter();
 
 // eslint-disable-next-line
@@ -109,29 +110,40 @@ export function getWithRenderProcess({
   wasmConfig,
   invoke,
 }: CreateElectronOptions) {
+  const interalInvoke = invoke ?? window.openIMRenderApi?.imMethodsInvoke;
   const subscribeCallback = (event: keyof EmitterEvents, data: any) =>
     sdkEmitter.emit(event, data);
+
+  if (instance) {
+    return {
+      instance,
+      subscribeCallback,
+    };
+  }
+
+  if (!interalInvoke && !wasmSDK) {
+    createWasmSDK(wasmConfig);
+  }
+
+  window.openIMRenderApi?.subscribe('openim-sdk-ipc-event', subscribeCallback);
 
   const sdkProxyHandler: ProxyHandler<IMSDKInterface> = {
     get(_, prop: keyof IMSDKInterface) {
       return async (...args: any[]) => {
         try {
-          if (!invoke) {
-            await createWasmSDK(wasmConfig);
-            if (!wasmSDK) throw new Error('WASM SDK is not available');
-            const cachedMethod = methodCache.get(wasmSDK[prop]);
+          if (!interalInvoke) {
+            if (!wasmSDK) {
+              await createWasmSDK(wasmConfig);
+            }
+            const cachedMethod = methodCache.get(wasmSDK![prop]);
             if (cachedMethod) {
               // eslint-disable-next-line
               return cachedMethod(...args);
             }
             // @ts-ignore
             const method = async (...args: any[]) => wasmSDK![prop](...args);
-            methodCache.set(wasmSDK[prop], method);
+            methodCache.set(wasmSDK![prop], method);
             return method(...args);
-          }
-
-          if (!subscribeCallback) {
-            console.warn('No subscribeCallback method provided');
           }
 
           if (prop === 'on' || prop === 'off') {
@@ -139,8 +151,8 @@ export function getWithRenderProcess({
             return sdkEmitter[prop](...args);
           }
 
-          const result = await invoke(prop, ...args);
-          if (result?.errCode) {
+          const result = await interalInvoke(prop, ...args);
+          if (result?.errCode !== 0 && prop !== 'initSDK') {
             throw result;
           }
           return result;
@@ -152,8 +164,7 @@ export function getWithRenderProcess({
     },
   };
 
-  return {
-    subscribeCallback,
-    proxy: new Proxy({} as IMSDKInterface, sdkProxyHandler),
-  };
+  instance = new Proxy({} as IMSDKInterface, sdkProxyHandler);
+
+  return { instance, subscribeCallback };
 }

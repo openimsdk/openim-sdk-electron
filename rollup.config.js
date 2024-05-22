@@ -27,12 +27,31 @@ export default [
         output: [
             {
                 file: 'lib/render.js',
+                format: 'esm',
+                sourcemap: false
+            },
+            {
+                file: 'lib/render.cjs.js',
+                format: 'cjs',
+                exports: 'auto',
+                sourcemap: false
+            },
+        ],
+        plugins: [
+            typescript(),
+        ]
+    },
+    {
+        input: 'src/preload.ts',
+        output: [
+            {
+                file: 'lib/preload.js',
                 format: 'cjs',
                 exports: 'auto',
                 sourcemap: false
             },
             {
-                file: 'lib/render.es.js',
+                file: 'lib/preload.es.js',
                 format: 'esm',
                 sourcemap: false
             }

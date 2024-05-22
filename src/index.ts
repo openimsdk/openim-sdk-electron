@@ -1,3 +1,3 @@
-import OpenIMSDK from './core';
+import OpenIMSDKMain from './main';
 
-export default OpenIMSDK;
+export default OpenIMSDKMain;

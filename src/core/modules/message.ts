@@ -26,6 +26,8 @@ import {
   VideoMsgParamsByURL,
   FileMsgParamsByURL,
   SoundMsgParamsByURL,
+  SendGroupReadReceiptParams,
+  GetGroupMessageReaderParams,
 } from 'open-im-sdk-wasm/lib/types/params';
 import {
   VideoMsgByPathParams,
@@ -258,13 +260,17 @@ export function setupMessageModule(openIMSDK: OpenIMSDK) {
           iOSBadgeCount: true,
         };
         openIMSDK.libOpenIMSDK.send_message(
-          openIMSDK.sendMessageCallbackWrap<MessageItem>(resolve, reject),
+          openIMSDK.sendMessageCallbackWrap<MessageItem>(
+            params.message.clientMsgID,
+            resolve,
+            reject
+          ),
           opid,
           JSON.stringify(params.message),
           params.recvID,
           params.groupID,
           JSON.stringify(offlinePushInfo),
-          params.isOnlineOnly ?? false
+          Number(!!params.isOnlineOnly)
         );
       }),
 
@@ -278,13 +284,17 @@ export function setupMessageModule(openIMSDK: OpenIMSDK) {
           iOSBadgeCount: true,
         };
         openIMSDK.libOpenIMSDK.send_message_not_oss(
-          openIMSDK.sendMessageCallbackWrap<MessageItem>(resolve, reject),
+          openIMSDK.sendMessageCallbackWrap<MessageItem>(
+            params.message.clientMsgID,
+            resolve,
+            reject
+          ),
           opid,
           JSON.stringify(params.message),
           params.recvID,
           params.groupID,
           JSON.stringify(offlinePushInfo),
-          params.isOnlineOnly ?? false
+          Number(!!params.isOnlineOnly)
         );
       }),
 
@@ -421,6 +431,33 @@ export function setupMessageModule(openIMSDK: OpenIMSDK) {
           params.conversationID,
           params.clientMsgID,
           params.localEx
+        );
+      }),
+    sendGroupMessageReadReceipt: (
+      params: SendGroupReadReceiptParams,
+      opid = uuidV4()
+    ) =>
+      new Promise<BaseResponse<void>>((resolve, reject) => {
+        openIMSDK.libOpenIMSDK.send_group_message_read_receipt(
+          openIMSDK.baseCallbackWrap<void>(resolve, reject),
+          opid,
+          params.conversationID,
+          JSON.stringify(params.clientMsgIDList)
+        );
+      }),
+    getGroupMessageReaderList: (
+      params: GetGroupMessageReaderParams,
+      opid = uuidV4()
+    ) =>
+      new Promise<BaseResponse<string[]>>((resolve, reject) => {
+        openIMSDK.libOpenIMSDK.get_group_message_reader_list(
+          openIMSDK.baseCallbackWrap<string[]>(resolve, reject),
+          opid,
+          params.conversationID,
+          params.clientMsgID,
+          params.filter,
+          params.offset,
+          params.count
         );
       }),
   };
@@ -565,4 +602,12 @@ export interface MessageModuleApi {
     params: SetMessageLocalExParams,
     opid?: string
   ) => Promise<BaseResponse<void>>;
+  sendGroupMessageReadReceipt: (
+    params: SendGroupReadReceiptParams,
+    opid?: string
+  ) => Promise<BaseResponse<void>>;
+  getGroupMessageReaderList: (
+    params: GetGroupMessageReaderParams,
+    opid?: string
+  ) => Promise<BaseResponse<string[]>>;
 }
