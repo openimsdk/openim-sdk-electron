@@ -5,8 +5,8 @@ import OpenIMSDK from './core';
 class OpenIMSDKMain {
   private sdk: OpenIMSDK;
   private webContents: WebContents[] = [];
-  constructor(path: string, webContent?: WebContents) {
-    this.sdk = new OpenIMSDK(path, this.emitProxy);
+  constructor(path: string, webContent?: WebContents, enterprise = false) {
+    this.sdk = new OpenIMSDK(path, this.emitProxy, enterprise);
     if (webContent) {
       this.webContents = [webContent];
     }
