@@ -1,6 +1,6 @@
 {
-  "name": "@openim/node-client-sdk",
-  "version": "1.0.9",
+  "name": "@openim/electron-client-sdk",
+  "version": "1.0.0",
   "description": "open im sdk for node",
   "source": "src/index.ts",
   "main": "lib/index.js",
@@ -22,7 +22,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/OpenIMSDK/open-im-sdk-node.git"
+    "url": "git+https://github.com/OpenIMSDK/openim-sdk-electron.git"
   },
   "license": "MIT",
   "author": {
@@ -37,9 +37,9 @@
     "openim"
   ],
   "bugs": {
-    "url": "https://github.com/OpenIMSDK/open-im-sdk-node/issues"
+    "url": "https://github.com/OpenIMSDK/openim-sdk-electron/issues"
   },
-  "homepage": "https://github.com/OpenIMSDK/open-im-sdk-node#readme",
+  "homepage": "https://github.com/OpenIMSDK/openim-sdk-electron#readme",
   "devDependencies": {
     "@commitlint/cli": "^16.2.4",
     "@commitlint/config-conventional": "^16.2.4",
