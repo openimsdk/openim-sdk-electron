@@ -2,7 +2,7 @@
 
 Use this SDK to add instant messaging capabilities to your application. By connecting to a self-hosted [OpenIM](https://www.openim.online/) server, you can quickly integrate instant messaging capabilities into your app with just a few lines of code.
 
-The underlying SDK core is implemented in [OpenIM SDK Core](https://github.com/openimsdk/openim-sdk-core). Using cgo, it is exported as C interfaces and provided as dynamic libraries such as DLL, SO, and DYLIB for use by other languages, implemented in [OpenIM SDK Cpp](https://github.com/openimsdk/openim-sdk-cpp.git).The web interacts with the [OpenIM SDK Cpp](https://github.com/openimsdk/openim-sdk-cpp.git) through JSON, using FFI (Foreign Function Interface) to communicate with the C interfaces, and the SDK exposes a re-encapsulated API for easy usage. For data storage, it utilizes the SQLite layer that is provided internally by the [OpenIM SDK Core](https://github.com/openimsdk/openim-sdk-core).
+The underlying SDK core is implemented in [OpenIM SDK Core](https://github.com/openimsdk/openim-sdk-core). Using cgo, it is exported as C interfaces and provided as dynamic libraries such as DLL, SO, and DYLIB for use by other languages, implemented in [OpenIM SDK Cpp](https://github.com/openimsdk/openim-sdk-cpp.git).The electron interacts with the [OpenIM SDK Cpp](https://github.com/openimsdk/openim-sdk-cpp.git) through JSON, using FFI (Foreign Function Interface) to communicate with the C interfaces, and the SDK exposes a re-encapsulated API for easy usage. For data storage, it utilizes the SQLite layer that is provided internally by the [OpenIM SDK Core](https://github.com/openimsdk/openim-sdk-core).
 
 ## Documentation 📚
 
@@ -55,13 +55,13 @@ new OpenIMSDKMain(libPath, mainWindow.webContents);
 ## In preload script
 
 ```typescript
-import '@openim/node-client-sdk/lib/preload';
+import '@openim/electron-client-sdk/lib/preload';
 ```
 
 ## In renderer process
 
 ```typescript
-import { getWithRenderProcess } from '@openim/node-client-sdk/lib/render';
+import { getWithRenderProcess } from '@openim/electron-client-sdk/lib/render';
 
 const { instance } = getWithRenderProcess();
 
