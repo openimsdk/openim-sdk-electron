@@ -10,6 +10,8 @@ import {
   SetConversationPrivateStateParams,
   SetBurnDurationParams,
   SetConversationExParams,
+  SetConversationMsgDestructTimeParams,
+  SetConversationMsgDestructParams,
 } from 'open-im-sdk-wasm/lib/types/params';
 import { ConversationItem } from 'open-im-sdk-wasm/lib/types/entity';
 
@@ -189,6 +191,30 @@ export function setupConversationModule(openIMSDK: OpenIMSDK) {
           conversationID
         );
       }),
+    setConversationMsgDestructTime: (
+      params: SetConversationMsgDestructTimeParams,
+      opid = uuidV4()
+    ) =>
+      new Promise<BaseResponse<void>>((resolve, reject) => {
+        openIMSDK.libOpenIMSDK.set_conversation_msg_destruct_time(
+          openIMSDK.baseCallbackWrap<void>(resolve, reject),
+          opid,
+          params.conversationID,
+          params.msgDestructTime
+        );
+      }),
+    setConversationIsMsgDestruct: (
+      params: SetConversationMsgDestructParams,
+      opid = uuidV4()
+    ) =>
+      new Promise<BaseResponse<void>>((resolve, reject) => {
+        openIMSDK.libOpenIMSDK.set_conversation_is_msg_destruct(
+          openIMSDK.baseCallbackWrap<void>(resolve, reject),
+          opid,
+          params.conversationID,
+          params.isMsgDestruct ? 1 : 0
+        );
+      }),
   };
 }
 
@@ -256,6 +282,14 @@ export interface ConversationModuleApi {
   ) => Promise<BaseResponse<void>>;
   deleteConversationAndDeleteAllMsg: (
     conversationID: string,
+    opid?: string
+  ) => Promise<BaseResponse<void>>;
+  setConversationMsgDestructTime: (
+    params: SetConversationMsgDestructTimeParams,
+    opid?: string
+  ) => Promise<BaseResponse<void>>;
+  setConversationIsMsgDestruct: (
+    params: SetConversationMsgDestructParams,
     opid?: string
   ) => Promise<BaseResponse<void>>;
 }

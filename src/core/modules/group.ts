@@ -265,6 +265,15 @@ export function setupGroupModule(openIMSDK: OpenIMSDK) {
           groupID
         );
       }),
+
+    isJoinGroup: (groupID: string, opid = uuidV4()) =>
+      new Promise<BaseResponse<void>>((resolve, reject) => {
+        openIMSDK.libOpenIMSDK.is_join_group(
+          openIMSDK.baseCallbackWrap<void>(resolve, reject),
+          opid,
+          groupID
+        );
+      }),
   };
 }
 
@@ -350,4 +359,5 @@ export interface GroupModuleApi {
   ) => Promise<BaseResponse<void>>;
   dismissGroup: (groupID: string, opid?: string) => Promise<BaseResponse<void>>;
   quitGroup: (groupID: string, opid?: string) => Promise<BaseResponse<void>>;
+  isJoinGroup: (groupID: string, opid?: string) => Promise<BaseResponse<void>>;
 }

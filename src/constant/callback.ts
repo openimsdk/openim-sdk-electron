@@ -55,6 +55,20 @@ export enum NativeEvent {
   UPLOAD_FILE_CALLBACK_UPLOAD_PART_COMPLETE,
   UPLOAD_FILE_CALLBACK_UPLOAD_COMPLETE,
   UPLOAD_FILE_CALLBACK_COMPLETE,
+  CONVERSATION_USER_INPUT_STATUS_CHANGED,
+  RECV_ONLINE_ONLY_MESSAGE,
+  RECV_NEW_INVITATION,
+  INVITEE_ACCEPTED,
+  INVITEE_ACCEPTED_BY_OTHER_DEVICE,
+  INVITEE_REJECTED,
+  INVITEE_REJECTED_BY_OTHER_DEVICE,
+  INVITATION_CANCELLED,
+  INVITATION_TIMEOUT,
+  HANG_UP,
+  ROOM_PARTICIPANT_CONNECTED,
+  ROOM_PARTICIPANT_DISCONNECTED,
+  STREAM_CHANGE,
+  RECEIVE_CUSTOM_SIGNAL,
 }
 
 export const eventMapping: Record<NativeEvent, CbEvents> = {
@@ -117,4 +131,21 @@ export const eventMapping: Record<NativeEvent, CbEvents> = {
   [NativeEvent.UPLOAD_FILE_CALLBACK_UPLOAD_ID]: CbEvents.UnUsedEvent,
   [NativeEvent.UPLOAD_FILE_CALLBACK_UPLOAD_PART_COMPLETE]: CbEvents.UnUsedEvent,
   [NativeEvent.UPLOAD_FILE_CALLBACK_UPLOAD_COMPLETE]: CbEvents.UnUsedEvent,
+  [NativeEvent.CONVERSATION_USER_INPUT_STATUS_CHANGED]: CbEvents.UnUsedEvent,
+  [NativeEvent.RECV_ONLINE_ONLY_MESSAGE]: CbEvents.UnUsedEvent,
+  [NativeEvent.RECV_NEW_INVITATION]: CbEvents.OnReceiveNewInvitation,
+  [NativeEvent.INVITEE_ACCEPTED]: CbEvents.OnInviteeAccepted,
+  [NativeEvent.INVITEE_ACCEPTED_BY_OTHER_DEVICE]:
+    CbEvents.OnInviteeAcceptedByOtherDevice,
+  [NativeEvent.INVITEE_REJECTED]: CbEvents.OnInviteeRejected,
+  [NativeEvent.INVITEE_REJECTED_BY_OTHER_DEVICE]:
+    CbEvents.OnInviteeRejectedByOtherDevice,
+  [NativeEvent.INVITATION_CANCELLED]: CbEvents.OnInvitationCancelled,
+  [NativeEvent.INVITATION_TIMEOUT]: CbEvents.OnInvitationTimeout,
+  [NativeEvent.HANG_UP]: CbEvents.OnHangUp,
+  [NativeEvent.ROOM_PARTICIPANT_CONNECTED]: CbEvents.OnRoomParticipantConnected,
+  [NativeEvent.ROOM_PARTICIPANT_DISCONNECTED]:
+    CbEvents.OnRoomParticipantDisconnected,
+  [NativeEvent.STREAM_CHANGE]: CbEvents.OnStreamChange,
+  [NativeEvent.RECEIVE_CUSTOM_SIGNAL]: CbEvents.OnReceiveCustomSignal,
 };

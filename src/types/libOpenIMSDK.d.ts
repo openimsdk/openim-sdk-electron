@@ -15,6 +15,7 @@ declare module 'libOpenIMSDK' {
     set_user_listener(cCallback: CB_I_S): void;
     set_friend_listener(cCallback: CB_I_S): void;
     set_custom_business_listener(cCallback: CB_I_S): void;
+    set_signaling_listener(cCallback: CB_I_S): void;
     init_sdk(cCallback: CB_I_S, operationID: string, config: string): number;
     un_init_sdk(operationID: string): void;
     login(
@@ -169,6 +170,21 @@ declare module 'libOpenIMSDK' {
       conversationID: string,
       isMsgDestruct: number
     ): void;
+    send_group_message_read_receipt(
+      cCallback: CB_S_I_S_S,
+      operationID: string,
+      conversationID: string,
+      clientMsgIDList: string
+    ): void;
+    get_group_message_reader_list(
+      cCallback: CB_S_I_S_S,
+      operationID: string,
+      conversationID: string,
+      clientMsgID: string,
+      filter: number,
+      offset: number,
+      count: number
+    ): void;
     hide_conversation(
       cCallback: CB_S_I_S_S,
       operationID: string,
@@ -237,7 +253,7 @@ declare module 'libOpenIMSDK' {
       recvID: string,
       groupID: string,
       offlinePushInfo: string,
-      isOnlineOnly: boolean
+      isOnlineOnly: number
     ): void;
     send_message_not_oss(
       cCallback: CB_S_I_S_S_I,
@@ -246,7 +262,7 @@ declare module 'libOpenIMSDK' {
       recvID: string,
       groupID: string,
       offlinePushInfo: string,
-      isOnlineOnly: boolean
+      isOnlineOnly: number
     ): void;
     find_message_list(
       cCallback: CB_S_I_S_S,
@@ -630,6 +646,92 @@ declare module 'libOpenIMSDK' {
       cCallback: CB_S_I_S_S,
       operationID: string,
       cGroupID: string
+    ): void;
+    signaling_invite_in_group(
+      cCallback: CB_S_I_S_S,
+      operationID: string,
+      cSignalInviteInGroupReq: string
+    ): void;
+    signaling_invite(
+      cCallback: CB_S_I_S_S,
+      operationID: string,
+      cSignalInviteReq: string
+    ): void;
+    signaling_accept(
+      cCallback: CB_S_I_S_S,
+      operationID: string,
+      cSignalAcceptReq: string
+    ): void;
+    signaling_reject(
+      cCallback: CB_S_I_S_S,
+      operationID: string,
+      cSignalRejectReq: string
+    ): void;
+    signaling_cancel(
+      cCallback: CB_S_I_S_S,
+      operationID: string,
+      cSignalCancelReq: string
+    ): void;
+    signaling_hung_up(
+      cCallback: CB_S_I_S_S,
+      operationID: string,
+      cSignalHungUpReq: string
+    ): void;
+    signaling_get_room_by_group_id(
+      cCallback: CB_S_I_S_S,
+      operationID: string,
+      cGroupID: string
+    ): void;
+    signaling_get_token_by_room_id(
+      cCallback: CB_S_I_S_S,
+      operationID: string,
+      cRoomID: string
+    ): void;
+    get_signaling_invitation_info_start_app(
+      cCallback: CB_S_I_S_S,
+      operationID: string
+    ): void;
+    signaling_create_meeting(
+      cCallback: CB_S_I_S_S,
+      operationID: string,
+      cSignalingCreateMeetingReq: string
+    ): void;
+    signaling_join_meeting(
+      cCallback: CB_S_I_S_S,
+      operationID: string,
+      cSignalingJoinMeetingReq: string
+    ): void;
+    signaling_update_meeting_info(
+      cCallback: CB_S_I_S_S,
+      operationID: string,
+      cSignalingUpdateMeetingInfoReq: string
+    ): void;
+    signaling_close_room(
+      cCallback: CB_S_I_S_S,
+      operationID: string,
+      cRoomID: string
+    ): void;
+    signaling_get_meetings(cCallback: CB_S_I_S_S, operationID: string): void;
+    signaling_operate_stream(
+      cCallback: CB_S_I_S_S,
+      operationID: string,
+      cStreamType: string,
+      cRoomID: string,
+      cUserID: string,
+      mute: number,
+      muteAll: number
+    ): void;
+    signaling_send_custom_signal(
+      cCallback: CB_S_I_S_S,
+      operationID: string,
+      cCustomInfo: string,
+      cRoomID: string
+    ): void;
+    upload_file(
+      cCallback: CB_S_I_S_S,
+      operationID: string,
+      cFileInfo: string,
+      pCallback: CB_I_S
     ): void;
   }
   const lib: LibOpenIMSDK;
