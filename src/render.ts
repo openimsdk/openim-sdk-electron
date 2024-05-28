@@ -106,10 +106,9 @@ async function createWasmSDK(wasmConfig?: WasmPathConfig): Promise<void> {
   }
 }
 
-export function getWithRenderProcess({
-  wasmConfig,
-  invoke,
-}: CreateElectronOptions) {
+export function getWithRenderProcess(
+  { wasmConfig, invoke } = {} as CreateElectronOptions
+) {
   const interalInvoke = invoke ?? window.openIMRenderApi?.imMethodsInvoke;
   const subscribeCallback = (event: keyof EmitterEvents, data: any) =>
     sdkEmitter.emit(event, data);
