@@ -1,21 +1,19 @@
-# Node/Electron Client SDK for OpenIM 👨‍💻💬
+# Node Client SDK for OpenIM 👨‍💻💬
 
-Use this SDK to add instant messaging capabilities to your application. By connecting to a self-hosted [OpenIM](https://www.openim.online/) server, you can quickly integrate instant messaging capabilities into your app with just a few lines of code.
+Use this SDK to add instant messaging capabilities to your application. By connecting to a self-hosted [OpenIM](https://openim.io) server, you can quickly integrate instant messaging capabilities into your app with just a few lines of code.
 
-The underlying SDK core is implemented in [OpenIM SDK Core](https://github.com/openimsdk/openim-sdk-core). Using the [WebAssembly](https://webassembly.org/) support provided by Go language, it can be compiled into wasm for web integration. The web interacts with the [OpenIM SDK Core](https://github.com/openimsdk/openim-sdk-core) through JSON, and the SDK exposes a re-encapsulated API for easy usage. In terms of data storage, JavaScript handles the logic of the SQL layer by virtualizing SQLite and storing it in IndexedDB using [sql.js](https://sql.js.org/).
+The underlying SDK core is implemented in [OpenIM SDK Core](https://github.com/openimsdk/openim-sdk-core). Using cgo, it is exported as C interfaces and provided as dynamic libraries such as DLL, SO, and DYLIB for use by other languages, implemented in [OpenIM SDK Cpp](https://github.com/openimsdk/openim-sdk-cpp.git).The electron interacts with the [OpenIM SDK Cpp](https://github.com/openimsdk/openim-sdk-cpp.git) through JSON, using FFI (Foreign Function Interface) to communicate with the C interfaces, and the SDK exposes a re-encapsulated API for easy usage. For data storage, it utilizes the SQLite layer that is provided internally by the [OpenIM SDK Core](https://github.com/openimsdk/openim-sdk-core).
 
 ## Documentation 📚
 
-Visit [https://doc.rentsoft.cn/](https://doc.rentsoft.cn/) for detailed documentation and guides.
-
-For the SDK reference, see [https://doc.rentsoft.cn/sdks/quickstart/browser](https://doc.rentsoft.cn/sdks/quickstart/browser).
+Visit [https://docs.openim.io/](https://docs.openim.io/) for detailed documentation and guides.
 
 ## Installation 💻
 
 ### Adding Dependencies
 
 ```shell
-npm install open-im-sdk-node --save
+npm install @openim/node-client-sdk --save
 ```
 
 ## Usage 🚀
@@ -25,9 +23,9 @@ The following examples demonstrate how to use the SDK. TypeScript is used, provi
 ### Importing the SDK
 
 ```typescript
-import OpenIMSDK from 'open-im-sdk-node';
+import OpenIMSDK from '@openim/node-client-sdk';
 
-const OpenIM = new OpenIMSDK();
+const IMSDK = new OpenIMSDK();
 ```
 
 ### Logging In and Listening for Connection Status
@@ -35,19 +33,26 @@ const OpenIM = new OpenIMSDK();
 > Note: You need to [deploy](https://github.com/openimsdk/open-im-server#rocket-quick-start) OpenIM Server first, the default port of OpenIM Server is 10001, 10002.
 
 ```typescript
-import { CbEvents } from 'open-im-sdk-wasm';
+import { CbEvents, LogLevel } from 'open-im-sdk-wasm';
 import type { WSEvent } from 'open-im-sdk-wasm';
 
-OpenIM.on(CbEvents.OnConnecting, handleConnecting);
-OpenIM.on(CbEvents.OnConnectFailed, handleConnectFailed);
-OpenIM.on(CbEvents.OnConnectSuccess, handleConnectSuccess);
+IMSDK.on(CbEvents.OnConnecting, handleConnecting);
+IMSDK.on(CbEvents.OnConnectFailed, handleConnectFailed);
+IMSDK.on(CbEvents.OnConnectSuccess, handleConnectSuccess);
 
-OpenIM.login({
-  userID: 'IM user ID',
-  token: 'IM user token',
-  platformID: 5,
+await IMSDK.initSDK({
+  platformID: 'your-platform-id',
   apiAddr: 'http://your-server-ip:10002',
   wsAddr: 'ws://your-server-ip:10001',
+  dataDir: 'your-db-dir',
+  logFilePath: 'your-log-file-path',
+  logLevel: LogLevel.Debug,
+  isLogStandardOutput: true,
+});
+
+await IMSDK.login({
+  userID: 'your-user-id',
+  token: 'your-token',
 });
 
 function handleConnecting() {
@@ -64,7 +69,7 @@ function handleConnectSuccess() {
 }
 ```
 
-To log into the IM server, you need to create an account and obtain a user ID and token. Refer to the [access token documentation](https://doc.rentsoft.cn/restapi/userManagement/userRegister) for details.
+To log into the IM server, you need to create an account and obtain a user ID and token. Refer to the [access token documentation](https://docs.openim.io/restapi/userManagement/userRegister) for details.
 
 ### Receiving and Sending Messages 💬
 
@@ -75,11 +80,11 @@ import { CbEvents } from 'open-im-sdk-wasm';
 import type { WSEvent, MessageItem } from 'open-im-sdk-wasm';
 
 // Listenfor new messages 📩
-OpenIM.on(CbEvents.OnRecvNewMessages, handleNewMessages);
+IMSDK.on(CbEvents.OnRecvNewMessages, handleNewMessages);
 
-const message = (await OpenIM.createTextMessage('hello openim')).data;
+const message = (await IMSDK.createTextMessage('hello openim')).data;
 
-OpenIM.sendMessage({
+IMSDK.sendMessage({
   recvID: 'recipient user ID',
   groupID: '',
   message,
@@ -97,19 +102,6 @@ function handleNewMessages({ data }: WSEvent<MessageItem[]>) {
   console.log(data);
 }
 ```
-
-## Examples 🌟
-
-You can find a demo web app that uses the SDK in the [openim-pc-web-demo](https://github.com/openimsdk/open-im-pc-web-demo) repository.
-
-## Browser Support 🌐
-
-| Browser             | Desktop OS            | Mobile OS |
-| ------------------- | --------------------- | --------- |
-| Chrome (61+)        | Windows, macOS, Linux | Android   |
-| Firefox (58+)       | Windows, macOS, Linux | Android   |
-| Safari (15+)        | macOS                 | iOS       |
-| Edge (Chromium 16+) | Windows, macOS        |           |
 
 ## Community :busts_in_silhouette:
 

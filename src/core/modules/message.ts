@@ -138,7 +138,7 @@ export function setupMessageModule(openIMSDK: OpenIMSDK) {
         )
       ),
 
-    createImageMessageByUrl: (params: ImageMsgParamsByURL, opid = uuidV4()) =>
+    createImageMessageByURL: (params: ImageMsgParamsByURL, opid = uuidV4()) =>
       openIMSDK.asyncRetunWrap<MessageItem>(
         opid,
         openIMSDK.libOpenIMSDK.create_image_message_by_url(
@@ -177,7 +177,7 @@ export function setupMessageModule(openIMSDK: OpenIMSDK) {
         )
       ),
 
-    createVideoMessageByUrl: (params: VideoMsgParamsByURL, opid = uuidV4()) =>
+    createVideoMessageByURL: (params: VideoMsgParamsByURL, opid = uuidV4()) =>
       openIMSDK.asyncRetunWrap<MessageItem>(
         opid,
         openIMSDK.libOpenIMSDK.create_video_message_by_url(
@@ -209,7 +209,7 @@ export function setupMessageModule(openIMSDK: OpenIMSDK) {
         )
       ),
 
-    createSoundMessageByUrl: (params: SoundMsgParamsByURL, opid = uuidV4()) =>
+    createSoundMessageByURL: (params: SoundMsgParamsByURL, opid = uuidV4()) =>
       openIMSDK.asyncRetunWrap<MessageItem>(
         opid,
         openIMSDK.libOpenIMSDK.create_sound_message_by_url(
@@ -241,7 +241,7 @@ export function setupMessageModule(openIMSDK: OpenIMSDK) {
         )
       ),
 
-    createFileMessageByUrl: (params: FileMsgParamsByURL, opid = uuidV4()) =>
+    createFileMessageByURL: (params: FileMsgParamsByURL, opid = uuidV4()) =>
       openIMSDK.asyncRetunWrap<MessageItem>(
         opid,
         openIMSDK.libOpenIMSDK.create_file_message_by_url(
@@ -508,7 +508,7 @@ export interface MessageModuleApi {
     imagePath: string,
     opid?: string
   ) => Promise<BaseResponse<MessageItem>>;
-  createImageMessageByUrl: (
+  createImageMessageByURL: (
     params: ImageMsgParamsByURL,
     opid?: string
   ) => Promise<BaseResponse<MessageItem>>;
@@ -520,7 +520,7 @@ export interface MessageModuleApi {
     params: VideoMsgByPathParams,
     opid?: string
   ) => Promise<BaseResponse<MessageItem>>;
-  createVideoMessageByUrl: (
+  createVideoMessageByURL: (
     params: VideoMsgParamsByURL,
     opid?: string
   ) => Promise<BaseResponse<MessageItem>>;
@@ -532,7 +532,7 @@ export interface MessageModuleApi {
     params: SoundMsgByPathParams,
     opid?: string
   ) => Promise<BaseResponse<MessageItem>>;
-  createSoundMessageByUrl: (
+  createSoundMessageByURL: (
     params: SoundMsgParamsByURL,
     opid?: string
   ) => Promise<BaseResponse<MessageItem>>;
@@ -544,7 +544,7 @@ export interface MessageModuleApi {
     params: FileMsgByPathParams,
     opid?: string
   ) => Promise<BaseResponse<MessageItem>>;
-  createFileMessageByUrl: (
+  createFileMessageByURL: (
     params: FileMsgParamsByURL,
     opid?: string
   ) => Promise<BaseResponse<MessageItem>>;
