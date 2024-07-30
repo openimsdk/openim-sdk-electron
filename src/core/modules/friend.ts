@@ -6,6 +6,7 @@ import {
   AccessFriendApplicationParams,
   AddBlackParams,
   AddFriendParams,
+  OffsetParams,
   RemarkFriendParams,
   SearchFriendParams,
   SetFriendExParams,
@@ -110,6 +111,15 @@ export function setupFriendModule(openIMSDK: OpenIMSDK) {
           opid
         );
       }),
+    getFriendListPage: (params: OffsetParams, opid = uuidV4()) =>
+      new Promise<BaseResponse<FullUserItem[]>>((resolve, reject) => {
+        openIMSDK.libOpenIMSDK.get_friend_list_page(
+          openIMSDK.baseCallbackWrap<FullUserItem[]>(resolve, reject),
+          opid,
+          params.offset,
+          params.count
+        );
+      }),
 
     getSpecifiedFriendsInfo: (userIDList: string[], opid = uuidV4()) =>
       new Promise<BaseResponse<FullUserItem[]>>((resolve, reject) => {
@@ -185,6 +195,10 @@ export interface FriendModuleApi {
     opid?: string
   ) => Promise<BaseResponse<FriendApplicationItem[]>>;
   getFriendList: (opid?: string) => Promise<BaseResponse<FullUserItem[]>>;
+  getFriendListPage: (
+    params: OffsetParams,
+    opid?: string
+  ) => Promise<BaseResponse<FullUserItem[]>>;
   getSpecifiedFriendsInfo: (
     userIDList: string[],
     opid?: string

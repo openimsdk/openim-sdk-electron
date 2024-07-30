@@ -526,6 +526,12 @@ declare module 'libOpenIMSDK' {
       cGroupMemberInfo: string
     ): void;
     get_joined_group_list(cCallback: CB_S_I_S_S, operationID: string): void;
+    get_joined_group_list_page(
+      cCallback: CB_S_I_S_S,
+      operationID: string,
+      offset: number,
+      count: number
+    ): void;
     get_specified_groups_info(
       cCallback: CB_S_I_S_S,
       operationID: string,
@@ -646,6 +652,12 @@ declare module 'libOpenIMSDK' {
       cCallback: CB_S_I_S_S,
       operationID: string,
       cGroupID: string
+    ): void;
+    get_users_in_group(
+      cCallback: CB_S_I_S_S,
+      operationID: string,
+      cGroupID: string,
+      userIDList: string
     ): void;
     signaling_invite_in_group(
       cCallback: CB_S_I_S_S,

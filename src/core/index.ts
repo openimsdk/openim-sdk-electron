@@ -30,6 +30,13 @@ function isObject(value: unknown) {
   return Object.prototype.toString.call(value) === '[object Object]';
 }
 
+const forceGetDataEvents = [
+  CbEvents.OnSyncServerStart,
+  CbEvents.OnSyncServerFinish,
+  CbEvents.OnSyncServerFailed,
+  CbEvents.OnSyncServerProgress,
+];
+
 class OpenIMSDK
   extends Emitter
   implements
@@ -73,7 +80,8 @@ class OpenIMSDK
       (event: NativeEvent, data: string) => {
         const cbEvent = eventMapping[event];
         if (!cbEvent) return;
-        this.emit(cbEvent, this.generateEventResponse(data));
+        const forceGetData = forceGetDataEvents.includes(cbEvent);
+        this.emit(cbEvent, this.generateEventResponse(data, '', forceGetData));
       },
       koffi.pointer(listenerCallbackProto)
     );
@@ -655,7 +663,7 @@ class OpenIMSDK
       '__stdcall',
       'add_black',
       'void',
-      ['baseCallback *', 'str', 'str']
+      ['baseCallback *', 'str', 'str', 'str']
     );
     this.libOpenIMSDK.get_black_list = this.lib.func(
       '__stdcall',
@@ -680,7 +688,7 @@ class OpenIMSDK
       '__stdcall',
       'join_group',
       'void',
-      ['baseCallback *', 'str', 'str', 'str', 'int']
+      ['baseCallback *', 'str', 'str', 'str', 'int', 'str']
     );
     this.libOpenIMSDK.quit_group = this.lib.func(
       '__stdcall',
@@ -723,6 +731,12 @@ class OpenIMSDK
       'get_joined_group_list',
       'void',
       ['baseCallback *', 'str']
+    );
+    this.libOpenIMSDK.get_joined_group_list_page = this.lib.func(
+      '__stdcall',
+      'get_joined_group_list_page',
+      'void',
+      ['baseCallback *', 'str', 'int', 'int']
     );
     this.libOpenIMSDK.get_specified_groups_info = this.lib.func(
       '__stdcall',
@@ -826,8 +840,14 @@ class OpenIMSDK
     this.libOpenIMSDK.is_join_group = this.lib.func(
       '__stdcall',
       'is_join_group',
-      'int',
+      'void',
       ['baseCallback *', 'str', 'str']
+    );
+    this.libOpenIMSDK.get_users_in_group = this.lib.func(
+      '__stdcall',
+      'get_users_in_group',
+      'void',
+      ['baseCallback *', 'str', 'str', 'str']
     );
     this.libOpenIMSDK.upload_file = this.lib.func(
       '__stdcall',
@@ -982,7 +1002,11 @@ class OpenIMSDK
     }
   };
 
-  generateEventResponse = (data: unknown, operationID = ''): BaseResponse => {
+  generateEventResponse = (
+    data: unknown,
+    operationID = '',
+    forceGetData = false
+  ): BaseResponse => {
     let errCode = 0;
     let errMsg = '';
     try {
@@ -998,6 +1022,11 @@ class OpenIMSDK
       errMsg = data.errMsg;
       // @ts-ignore
       data = data.data;
+    }
+    if (forceGetData) {
+      // @ts-ignore
+      const values = Object.values(data);
+      data = values[0];
     }
     return {
       errCode,
@@ -1216,6 +1245,7 @@ class OpenIMSDK
   getFriendApplicationListAsApplicant!: FriendModuleApi['getFriendApplicationListAsApplicant'];
   getFriendApplicationListAsRecipient!: FriendModuleApi['getFriendApplicationListAsRecipient'];
   getFriendList!: FriendModuleApi['getFriendList'];
+  getFriendListPage!: FriendModuleApi['getFriendListPage'];
   getSpecifiedFriendsInfo!: FriendModuleApi['getSpecifiedFriendsInfo'];
   refuseFriendApplication!: FriendModuleApi['refuseFriendApplication'];
   removeBlack!: FriendModuleApi['removeBlack'];
@@ -1227,6 +1257,7 @@ class OpenIMSDK
   joinGroup!: GroupModuleApi['joinGroup'];
   inviteUserToGroup!: GroupModuleApi['inviteUserToGroup'];
   getJoinedGroupList!: GroupModuleApi['getJoinedGroupList'];
+  getJoinedGroupListPage!: GroupModuleApi['getJoinedGroupListPage'];
   searchGroups!: GroupModuleApi['searchGroups'];
   getSpecifiedGroupsInfo!: GroupModuleApi['getSpecifiedGroupsInfo'];
   setGroupInfo!: GroupModuleApi['setGroupInfo'];
@@ -1247,6 +1278,7 @@ class OpenIMSDK
   dismissGroup!: GroupModuleApi['dismissGroup'];
   quitGroup!: GroupModuleApi['quitGroup'];
   isJoinGroup!: GroupModuleApi['isJoinGroup'];
+  getUsersInGroup!: GroupModuleApi['getUsersInGroup'];
 
   // implements conversation api
   getAllConversationList!: ConversationModuleApi['getAllConversationList'];

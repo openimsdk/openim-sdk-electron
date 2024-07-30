@@ -19,6 +19,7 @@ import {
   ChangeGroupMuteParams,
   TransferGroupParams,
   AccessToGroupParams,
+  OffsetParams,
 } from 'open-im-sdk-wasm/lib/types/params';
 
 export function setupGroupModule(openIMSDK: OpenIMSDK) {
@@ -60,6 +61,16 @@ export function setupGroupModule(openIMSDK: OpenIMSDK) {
         openIMSDK.libOpenIMSDK.get_joined_group_list(
           openIMSDK.baseCallbackWrap<GroupItem[]>(resolve, reject),
           opid
+        );
+      }),
+
+    getJoinedGroupListPage: (params: OffsetParams, opid = uuidV4()) =>
+      new Promise<BaseResponse<GroupItem[]>>((resolve, reject) => {
+        openIMSDK.libOpenIMSDK.get_joined_group_list_page(
+          openIMSDK.baseCallbackWrap<GroupItem[]>(resolve, reject),
+          opid,
+          params.offset,
+          params.count
         );
       }),
 
@@ -274,6 +285,18 @@ export function setupGroupModule(openIMSDK: OpenIMSDK) {
           groupID
         );
       }),
+    getUsersInGroup: (
+      params: Omit<AccessToGroupParams, 'reason'>,
+      opid = uuidV4()
+    ) =>
+      new Promise<BaseResponse<void>>((resolve, reject) => {
+        openIMSDK.libOpenIMSDK.get_users_in_group(
+          openIMSDK.baseCallbackWrap<void>(resolve, reject),
+          opid,
+          params.groupID,
+          JSON.stringify(params.userIDList)
+        );
+      }),
   };
 }
 
@@ -291,6 +314,10 @@ export interface GroupModuleApi {
     opid?: string
   ) => Promise<BaseResponse<void>>;
   getJoinedGroupList: (opid?: string) => Promise<BaseResponse<GroupItem[]>>;
+  getJoinedGroupListPage: (
+    params: OffsetParams,
+    opid?: string
+  ) => Promise<BaseResponse<GroupItem[]>>;
   searchGroups: (
     params: SearchGroupParams,
     opid?: string
@@ -360,4 +387,8 @@ export interface GroupModuleApi {
   dismissGroup: (groupID: string, opid?: string) => Promise<BaseResponse<void>>;
   quitGroup: (groupID: string, opid?: string) => Promise<BaseResponse<void>>;
   isJoinGroup: (groupID: string, opid?: string) => Promise<BaseResponse<void>>;
+  getUsersInGroup: (
+    params: Omit<AccessToGroupParams, 'reason'>,
+    opid?: string
+  ) => Promise<BaseResponse<void>>;
 }
