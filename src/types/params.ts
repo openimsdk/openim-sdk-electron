@@ -8,6 +8,7 @@ export interface InitConfig {
   logFilePath?: string;
   isLogStandardOutput?: boolean;
   isExternalExtensions?: boolean;
+  systemType: string;
 }
 
 export interface LoginParams {
@@ -30,4 +31,9 @@ export type VideoMsgByPathParams = {
 export type FileMsgByPathParams = {
   filePath: string;
   fileName: string;
+};
+
+export type UploadLogsParams = {
+  line: number;
+  ex?: string;
 };

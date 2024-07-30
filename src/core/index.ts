@@ -2,7 +2,7 @@ import koffi from 'koffi';
 import { v4 as uuidV4 } from 'uuid';
 import type { LibOpenIMSDK } from 'libOpenIMSDK';
 import { UserModuleApi, setupUserModule } from './modules/user';
-import { InitConfig, LoginParams } from '@/types/params';
+import { InitConfig, LoginParams, UploadLogsParams } from '@/types/params';
 import { BaseResponse, EmitProxy } from '@/types/entity';
 import { ErrorCode } from '@/constant/api';
 import { NativeEvent, eventMapping } from '@/constant/callback';
@@ -855,6 +855,12 @@ class OpenIMSDK
       'void',
       ['baseCallback *', 'str', 'str', 'listenerCallback *']
     );
+    this.libOpenIMSDK.upload_logs = this.lib.func(
+      '__stdcall',
+      'upload_logs',
+      'void',
+      ['baseCallback *', 'str', 'int', 'str', 'listenerCallback *']
+    );
 
     // advance
     if (this.enterprise) {
@@ -1218,6 +1224,17 @@ class OpenIMSDK
         this.baseCallbackWrap(resolve, reject),
         opid,
         JSON.stringify(params),
+        this.listenerCallback
+      );
+    });
+
+  uploadLogs = (params: UploadLogsParams, opid = uuidV4()) =>
+    new Promise<BaseResponse<void>>((resolve, reject) => {
+      this.libOpenIMSDK.upload_logs(
+        this.baseCallbackWrap(resolve, reject),
+        opid,
+        params.line,
+        params.ex || '',
         this.listenerCallback
       );
     });

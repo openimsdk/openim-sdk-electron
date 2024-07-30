@@ -1,6 +1,6 @@
 {
   "name": "@openim/electron-client-sdk",
-  "version": "1.0.5",
+  "version": "1.0.6",
   "description": "open im sdk for node",
   "source": "src/index.ts",
   "main": "lib/index.js",
