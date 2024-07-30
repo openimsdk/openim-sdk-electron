@@ -745,6 +745,13 @@ declare module 'libOpenIMSDK' {
       cFileInfo: string,
       pCallback: CB_I_S
     ): void;
+    upload_logs(
+      cCallback: CB_S_I_S_S,
+      operationID: string,
+      line: number,
+      ex: string,
+      pCallback: CB_I_S
+    ): void;
   }
   const lib: LibOpenIMSDK;
   export default lib;

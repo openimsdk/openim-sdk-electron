@@ -70,6 +70,7 @@ export enum NativeEvent {
   ROOM_PARTICIPANT_DISCONNECTED,
   STREAM_CHANGE,
   RECEIVE_CUSTOM_SIGNAL,
+  ON_PROGRESS,
 }
 
 export const eventMapping: Record<NativeEvent, CbEvents> = {
@@ -150,4 +151,5 @@ export const eventMapping: Record<NativeEvent, CbEvents> = {
     CbEvents.OnRoomParticipantDisconnected,
   [NativeEvent.STREAM_CHANGE]: CbEvents.OnStreamChange,
   [NativeEvent.RECEIVE_CUSTOM_SIGNAL]: CbEvents.OnReceiveCustomSignal,
+  [NativeEvent.ON_PROGRESS]: CbEvents.OnUploadLogsProgress,
 };

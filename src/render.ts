@@ -10,6 +10,7 @@ import {
   FileMsgByPathParams,
   SoundMsgByPathParams,
   VideoMsgByPathParams,
+  UploadLogsParams,
 } from './types/params';
 
 type EmitterEvents = {
@@ -83,6 +84,13 @@ type IMSDKInterface = Omit<WasmInterface, 'login'> & {
     params: FileMsgByPathParams,
     opid?: string
   ) => Promise<WsResponse<MessageItem>>;
+  /**
+   * @access only for electron
+   */
+  uploadLogs: (
+    params: UploadLogsParams,
+    opid?: string
+  ) => Promise<WsResponse<string>>;
 };
 
 type ElectronInvoke = (method: string, ...args: any[]) => Promise<WsResponse>;
