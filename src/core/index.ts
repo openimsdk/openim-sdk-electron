@@ -14,13 +14,13 @@ import {
   setupConversationModule,
 } from './modules/conversation';
 import { type MessageModuleApi, setupMessageModule } from './modules/message';
-import { CbEvents, LoginStatus } from 'open-im-sdk-wasm';
-import { SelfUserInfo } from 'open-im-sdk-wasm/lib/types/entity';
+import { CbEvents, LoginStatus } from '@openim/wasm-client-sdk';
+import { SelfUserInfo } from '@openim/wasm-client-sdk/lib/types/entity';
 import {
   SetConversationExParams,
   SetFriendExParams,
   UploadFileParams,
-} from 'open-im-sdk-wasm/lib/types/params';
+} from '@openim/wasm-client-sdk/lib/types/params';
 import {
   type SignalingModuleApi,
   setupSignalingModule,

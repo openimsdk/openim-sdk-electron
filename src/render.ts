@@ -1,9 +1,12 @@
-import { CbEvents, getSDK as WasmGetSDK } from 'open-im-sdk-wasm';
-import { MessageItem, WsResponse } from 'open-im-sdk-wasm/lib/types/entity';
+import { CbEvents, getSDK as WasmGetSDK } from '@openim/wasm-client-sdk';
+import {
+  MessageItem,
+  WsResponse,
+} from '@openim/wasm-client-sdk/lib/types/entity';
 import {
   WasmPathConfig,
   InitAndLoginConfig,
-} from 'open-im-sdk-wasm/lib/types/params';
+} from '@openim/wasm-client-sdk/lib/types/params';
 import Emitter from './utils/emitter';
 import {
   InitConfig,
@@ -109,7 +112,7 @@ const methodCache = new WeakMap<Function, any>();
 
 async function createWasmSDK(wasmConfig?: WasmPathConfig): Promise<void> {
   if (!wasmSDK) {
-    const { getSDK } = await import('open-im-sdk-wasm');
+    const { getSDK } = await import('@openim/wasm-client-sdk');
     wasmSDK = getSDK(wasmConfig) as unknown as IMSDKInterface;
   }
 }
@@ -148,6 +151,7 @@ export function getWithRenderProcess(
               return cachedMethod(...args);
             }
             // @ts-ignore
+            // eslint-disable-next-line
             const method = async (...args: any[]) => wasmSDK![prop](...args);
             methodCache.set(wasmSDK![prop], method);
             return method(...args);

@@ -8,12 +8,12 @@ import {
   RtcActionParams,
   SignalingInviteParams,
   UpdateMeetingParams,
-} from 'open-im-sdk-wasm/lib/types/params';
+} from '@openim/wasm-client-sdk/lib/types/params';
 import {
   RtcInviteResults,
   CallingRoomData,
   MeetingRecord,
-} from 'open-im-sdk-wasm/lib/types/entity';
+} from '@openim/wasm-client-sdk/lib/types/entity';
 
 export function setupSignalingModule(openIMSDK: OpenIMSDK) {
   return {

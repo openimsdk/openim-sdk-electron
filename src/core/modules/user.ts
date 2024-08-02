@@ -1,16 +1,16 @@
 import { v4 as uuidV4 } from 'uuid';
 import { BaseResponse } from '@/types/entity';
 import OpenIMSDK from '..';
-import { MessageReceiveOptType } from 'open-im-sdk-wasm';
+import { MessageReceiveOptType } from '@openim/wasm-client-sdk';
 import {
   SelfUserInfo,
   FullUserItemWithCache,
   UserOnlineState,
-} from 'open-im-sdk-wasm/lib/types/entity';
+} from '@openim/wasm-client-sdk/lib/types/entity';
 import {
   GetUserInfoWithCacheParams,
   PartialUserItem,
-} from 'open-im-sdk-wasm/lib/types/params';
+} from '@openim/wasm-client-sdk/lib/types/params';
 
 export function setupUserModule(openIMSDK: OpenIMSDK) {
   return {

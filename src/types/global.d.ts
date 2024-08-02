@@ -1,4 +1,4 @@
-import { WsResponse } from 'open-im-sdk-wasm/lib/types/entity';
+import { WsResponse } from '@openim/wasm-client-sdk/lib/types/entity';
 
 export interface IOpenIMRenderAPI {
   subscribe: (

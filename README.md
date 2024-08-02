@@ -15,14 +15,14 @@ For the SDK reference, see [https://docs.openim.io/sdks/quickstart/electron](htt
 ### Adding Dependencies
 
 ```shell
-npm install open-im-sdk-wasm @openim/electron-client-sdk --save
+npm install @openim/wasm-client-sdk @openim/electron-client-sdk --save
 ```
 
 ### Obtaining Required Static Resources for WASM
 
 Follow these steps to obtain the static resources required for WebAssembly (WASM):
 
-1. Locate the `open-im-sdk-wasm` subdirectory in the `node_modules` directory of your project. Copy all the files in the `assets` folder to your project's public resource directory.
+1. Locate the `@openim/wasm-client-sdk` subdirectory in the `node_modules` directory of your project. Copy all the files in the `assets` folder to your project's public resource directory.
 
    The files to be copied are:
 
@@ -34,7 +34,7 @@ Follow these steps to obtain the static resources required for WebAssembly (WASM
 
 ### Possible Issues ❗
 
-> if you are using webpack4, you may flow this issue [How to import open-im-sdk-wasm in webpack4.x](https://github.com/openimsdk/open-im-sdk-web-wasm/issues/73).
+> if you are using webpack4, you may flow this issue [How to import @openim/wasm-client-sdk in webpack4.x](https://github.com/openimsdk/open-im-sdk-web-wasm/issues/73).
 
 ## Usage 🚀
 
@@ -73,8 +73,8 @@ export const IMSDK = instance;
 > Note: You need to [deploy](https://github.com/openimsdk/open-im-server#rocket-quick-start) OpenIM Server first, the default port of OpenIM Server is 10001, 10002.
 
 ```typescript
-import { CbEvents, LogLevel } from 'open-im-sdk-wasm';
-import type { WSEvent } from 'open-im-sdk-wasm/lib/types/entity';
+import { CbEvents, LogLevel } from '@openim/wasm-client-sdk';
+import type { WSEvent } from '@openim/wasm-client-sdk/lib/types/entity';
 
 IMSDK.on(CbEvents.OnConnecting, handleConnecting);
 IMSDK.on(CbEvents.OnConnectFailed, handleConnectFailed);
@@ -127,8 +127,11 @@ To log into the IM server, you need to create an account and obtain a user ID an
 OpenIM makes it easy to send and receive messages. By default, there is no restriction on having a friend relationship to send messages (although you can configure other policies on the server). If you know the user ID of the recipient, you can conveniently send a message to them.
 
 ```typescript
-import { CbEvents } from 'open-im-sdk-wasm';
-import type { WSEvent, MessageItem } from 'open-im-sdk-wasm/lib/types/entity';
+import { CbEvents } from '@openim/wasm-client-sdk';
+import type {
+  WSEvent,
+  MessageItem,
+} from '@openim/wasm-client-sdk/lib/types/entity';
 
 // Listenfor new messages 📩
 IMSDK.on(CbEvents.OnRecvNewMessages, handleNewMessages);

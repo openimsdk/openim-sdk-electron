@@ -10,14 +10,14 @@ import {
   RemarkFriendParams,
   SearchFriendParams,
   SetFriendExParams,
-} from 'open-im-sdk-wasm/lib/types/params';
+} from '@openim/wasm-client-sdk/lib/types/params';
 import {
   FriendshipInfo,
   BlackUserItem,
   FriendApplicationItem,
   FullUserItem,
   SearchedFriendsInfo,
-} from 'open-im-sdk-wasm/lib/types/entity';
+} from '@openim/wasm-client-sdk/lib/types/entity';
 
 export function setupFriendModule(openIMSDK: OpenIMSDK) {
   return {

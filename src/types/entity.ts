@@ -1,4 +1,4 @@
-import { CbEvents } from 'open-im-sdk-wasm';
+import { CbEvents } from '@openim/wasm-client-sdk';
 
 export type EmitProxy = (event: CbEvents, ...args: any[]) => void;
 

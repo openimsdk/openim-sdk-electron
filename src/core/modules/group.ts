@@ -5,7 +5,7 @@ import {
   GroupItem,
   GroupApplicationItem,
   GroupMemberItem,
-} from 'open-im-sdk-wasm/lib/types/entity';
+} from '@openim/wasm-client-sdk/lib/types/entity';
 import {
   CreateGroupParams,
   JoinGroupParams,
@@ -20,7 +20,7 @@ import {
   TransferGroupParams,
   AccessToGroupParams,
   OffsetParams,
-} from 'open-im-sdk-wasm/lib/types/params';
+} from '@openim/wasm-client-sdk/lib/types/params';
 
 export function setupGroupModule(openIMSDK: OpenIMSDK) {
   return {

@@ -12,8 +12,8 @@ import {
   SetConversationExParams,
   SetConversationMsgDestructTimeParams,
   SetConversationMsgDestructParams,
-} from 'open-im-sdk-wasm/lib/types/params';
-import { ConversationItem } from 'open-im-sdk-wasm/lib/types/entity';
+} from '@openim/wasm-client-sdk/lib/types/params';
+import { ConversationItem } from '@openim/wasm-client-sdk/lib/types/entity';
 
 export function setupConversationModule(openIMSDK: OpenIMSDK) {
   return {

@@ -5,7 +5,7 @@ import {
   MessageItem,
   CardElem,
   AdvancedGetMessageResult,
-} from 'open-im-sdk-wasm/lib/types/entity';
+} from '@openim/wasm-client-sdk/lib/types/entity';
 import {
   AtMsgParams,
   LocationMsgParams,
@@ -28,7 +28,7 @@ import {
   SoundMsgParamsByURL,
   SendGroupReadReceiptParams,
   GetGroupMessageReaderParams,
-} from 'open-im-sdk-wasm/lib/types/params';
+} from '@openim/wasm-client-sdk/lib/types/params';
 import {
   VideoMsgByPathParams,
   SoundMsgByPathParams,

@@ -1,4 +1,4 @@
-import { LogLevel } from 'open-im-sdk-wasm';
+import { LogLevel } from '@openim/wasm-client-sdk';
 export interface InitConfig {
   apiAddr: string;
   wsAddr: string;

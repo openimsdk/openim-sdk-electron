@@ -1,5 +1,5 @@
 import { ipcMain, WebContents } from 'electron';
-import { CbEvents } from 'open-im-sdk-wasm';
+import { CbEvents } from '@openim/wasm-client-sdk';
 import OpenIMSDK from './core';
 
 class OpenIMSDKMain {

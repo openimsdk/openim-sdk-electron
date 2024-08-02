@@ -1,4 +1,4 @@
-import { CbEvents } from 'open-im-sdk-wasm';
+import { CbEvents } from '@openim/wasm-client-sdk';
 
 interface Events {
   [key: string]: Cbfn[];
