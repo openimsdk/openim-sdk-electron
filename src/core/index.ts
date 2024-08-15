@@ -1304,7 +1304,7 @@ class OpenIMSDK
         0,
         params.msgs,
         params.err,
-        '[]'
+        JSON.stringify([])
       );
     });
   errorLogs = (params: ErrorLogsParams, opid = uuidV4()) =>
@@ -1317,7 +1317,7 @@ class OpenIMSDK
         0,
         params.msgs,
         params.err,
-        '[]'
+        JSON.stringify([])
       );
     });
   fatalLogs = (params: ErrorLogsParams, opid = uuidV4()) =>
@@ -1330,7 +1330,7 @@ class OpenIMSDK
         0,
         params.msgs,
         params.err,
-        '[]'
+        JSON.stringify([])
       );
     });
   panicLogs = (params: ErrorLogsParams, opid = uuidV4()) =>
