@@ -14,6 +14,8 @@ import {
   SoundMsgByPathParams,
   VideoMsgByPathParams,
   UploadLogsParams,
+  DebugLogsParams,
+  ErrorLogsParams,
 } from './types/params';
 
 type EmitterEvents = {
@@ -93,7 +95,38 @@ type IMSDKInterface = Omit<WasmInterface, 'login'> & {
   uploadLogs: (
     params: UploadLogsParams,
     opid?: string
-  ) => Promise<WsResponse<string>>;
+  ) => Promise<WsResponse<unknown>>;
+  /**
+   * @access only for electron
+   */
+  verboseLogs: (
+    params: DebugLogsParams,
+    opid?: string
+  ) => Promise<WsResponse<unknown>>;
+  debugLogs: (
+    params: DebugLogsParams,
+    opid?: string
+  ) => Promise<WsResponse<unknown>>;
+  infoLogs: (
+    params: DebugLogsParams,
+    opid?: string
+  ) => Promise<WsResponse<unknown>>;
+  warnLogs: (
+    params: ErrorLogsParams,
+    opid?: string
+  ) => Promise<WsResponse<unknown>>;
+  errorLogs: (
+    params: ErrorLogsParams,
+    opid?: string
+  ) => Promise<WsResponse<unknown>>;
+  fatalLogs: (
+    params: ErrorLogsParams,
+    opid?: string
+  ) => Promise<WsResponse<unknown>>;
+  panicLogs: (
+    params: ErrorLogsParams,
+    opid?: string
+  ) => Promise<WsResponse<unknown>>;
 };
 
 type ElectronInvoke = (method: string, ...args: any[]) => Promise<WsResponse>;

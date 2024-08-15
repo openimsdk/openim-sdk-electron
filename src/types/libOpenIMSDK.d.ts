@@ -752,6 +752,16 @@ declare module 'libOpenIMSDK' {
       ex: string,
       pCallback: CB_I_S
     ): void;
+    logs(
+      cCallback: CB_S_I_S_S,
+      operationID: string,
+      logLevel: number,
+      file: string,
+      line: number,
+      msgs: string,
+      err: string,
+      keyAndValue: string
+    ): void;
   }
   const lib: LibOpenIMSDK;
   export default lib;

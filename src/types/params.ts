@@ -37,3 +37,22 @@ export type UploadLogsParams = {
   line: number;
   ex?: string;
 };
+
+export type LogsParams = {
+  logLevel: LogLevel;
+  file: string;
+  line: number;
+  msgs: string;
+  err: string;
+  keyAndValue: string[];
+};
+
+export type DebugLogsParams = {
+  msgs: string;
+  keyAndValue: string[];
+};
+
+export type ErrorLogsParams = {
+  msgs: string;
+  err: string;
+};
