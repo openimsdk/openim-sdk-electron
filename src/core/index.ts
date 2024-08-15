@@ -1343,7 +1343,7 @@ class OpenIMSDK
         0,
         params.msgs,
         params.err,
-        ''
+        '[]'
       );
     });
 
