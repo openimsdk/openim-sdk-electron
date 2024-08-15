@@ -2,7 +2,13 @@ import koffi from 'koffi';
 import { v4 as uuidV4 } from 'uuid';
 import type { LibOpenIMSDK } from 'libOpenIMSDK';
 import { UserModuleApi, setupUserModule } from './modules/user';
-import { InitConfig, LoginParams, UploadLogsParams } from '@/types/params';
+import {
+  DebugLogsParams,
+  ErrorLogsParams,
+  InitConfig,
+  LoginParams,
+  UploadLogsParams,
+} from '@/types/params';
 import { BaseResponse, EmitProxy } from '@/types/entity';
 import { ErrorCode } from '@/constant/api';
 import { NativeEvent, eventMapping } from '@/constant/callback';
@@ -14,7 +20,7 @@ import {
   setupConversationModule,
 } from './modules/conversation';
 import { type MessageModuleApi, setupMessageModule } from './modules/message';
-import { CbEvents, LoginStatus } from '@openim/wasm-client-sdk';
+import { CbEvents, LoginStatus, LogLevel } from '@openim/wasm-client-sdk';
 import { SelfUserInfo } from '@openim/wasm-client-sdk/lib/types/entity';
 import {
   SetConversationExParams,
@@ -861,6 +867,16 @@ class OpenIMSDK
       'void',
       ['baseCallback *', 'str', 'int', 'str', 'listenerCallback *']
     );
+    this.libOpenIMSDK.logs = this.lib.func('__stdcall', 'logs', 'void', [
+      'baseCallback *',
+      'str',
+      'int',
+      'str',
+      'int',
+      'str',
+      'str',
+      'str',
+    ]);
 
     // advance
     if (this.enterprise) {
@@ -1236,6 +1252,98 @@ class OpenIMSDK
         params.line,
         params.ex || '',
         this.listenerCallback
+      );
+    });
+
+  verboseLogs = (params: DebugLogsParams, opid = uuidV4()) =>
+    new Promise<BaseResponse<void>>((resolve, reject) => {
+      this.libOpenIMSDK.logs(
+        this.baseCallbackWrap(resolve, reject),
+        opid,
+        LogLevel.Verbose,
+        '',
+        0,
+        params.msgs,
+        '',
+        JSON.stringify(params.keyAndValue)
+      );
+    });
+  debugLogs = (params: DebugLogsParams, opid = uuidV4()) =>
+    new Promise<BaseResponse<void>>((resolve, reject) => {
+      this.libOpenIMSDK.logs(
+        this.baseCallbackWrap(resolve, reject),
+        opid,
+        LogLevel.Debug,
+        '',
+        0,
+        params.msgs,
+        '',
+        JSON.stringify(params.keyAndValue)
+      );
+    });
+  infoLogs = (params: DebugLogsParams, opid = uuidV4()) =>
+    new Promise<BaseResponse<void>>((resolve, reject) => {
+      this.libOpenIMSDK.logs(
+        this.baseCallbackWrap(resolve, reject),
+        opid,
+        LogLevel.Info,
+        '',
+        0,
+        params.msgs,
+        '',
+        JSON.stringify(params.keyAndValue)
+      );
+    });
+  warnLogs = (params: ErrorLogsParams, opid = uuidV4()) =>
+    new Promise<BaseResponse<void>>((resolve, reject) => {
+      this.libOpenIMSDK.logs(
+        this.baseCallbackWrap(resolve, reject),
+        opid,
+        LogLevel.Warn,
+        '',
+        0,
+        params.msgs,
+        params.err,
+        ''
+      );
+    });
+  errorLogs = (params: ErrorLogsParams, opid = uuidV4()) =>
+    new Promise<BaseResponse<void>>((resolve, reject) => {
+      this.libOpenIMSDK.logs(
+        this.baseCallbackWrap(resolve, reject),
+        opid,
+        LogLevel.Error,
+        '',
+        0,
+        params.msgs,
+        params.err,
+        ''
+      );
+    });
+  fatalLogs = (params: ErrorLogsParams, opid = uuidV4()) =>
+    new Promise<BaseResponse<void>>((resolve, reject) => {
+      this.libOpenIMSDK.logs(
+        this.baseCallbackWrap(resolve, reject),
+        opid,
+        LogLevel.Fatal,
+        '',
+        0,
+        params.msgs,
+        params.err,
+        ''
+      );
+    });
+  panicLogs = (params: ErrorLogsParams, opid = uuidV4()) =>
+    new Promise<BaseResponse<void>>((resolve, reject) => {
+      this.libOpenIMSDK.logs(
+        this.baseCallbackWrap(resolve, reject),
+        opid,
+        LogLevel.Panic,
+        '',
+        0,
+        params.msgs,
+        params.err,
+        ''
       );
     });
 
