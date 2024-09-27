@@ -4,13 +4,10 @@ import OpenIMSDK from '..';
 import { MessageReceiveOptType } from '@openim/wasm-client-sdk';
 import {
   SelfUserInfo,
-  FullUserItemWithCache,
   UserOnlineState,
+  PublicUserItem,
 } from '@openim/wasm-client-sdk/lib/types/entity';
-import {
-  GetUserInfoWithCacheParams,
-  PartialUserItem,
-} from '@openim/wasm-client-sdk/lib/types/params';
+import { PartialUserItem } from '@openim/wasm-client-sdk/lib/types/params';
 
 export function setupUserModule(openIMSDK: OpenIMSDK) {
   return {
@@ -31,16 +28,12 @@ export function setupUserModule(openIMSDK: OpenIMSDK) {
         );
       }),
 
-    getUsersInfoWithCache: (
-      params: GetUserInfoWithCacheParams,
-      opid = uuidV4()
-    ) =>
-      new Promise<BaseResponse<FullUserItemWithCache[]>>((resolve, reject) => {
-        openIMSDK.libOpenIMSDK.get_users_info_with_cache(
-          openIMSDK.baseCallbackWrap<FullUserItemWithCache[]>(resolve, reject),
+    getUsersInfo: (params: string[], opid = uuidV4()) =>
+      new Promise<BaseResponse<PublicUserItem[]>>((resolve, reject) => {
+        openIMSDK.libOpenIMSDK.get_users_info(
+          openIMSDK.baseCallbackWrap<PublicUserItem[]>(resolve, reject),
           opid,
-          JSON.stringify(params.userIDList),
-          params.groupID ?? ''
+          JSON.stringify(params)
         );
       }),
 
@@ -75,10 +68,12 @@ export function setupUserModule(openIMSDK: OpenIMSDK) {
       opid = uuidV4()
     ) =>
       new Promise<BaseResponse<void>>((resolve, reject) => {
-        openIMSDK.libOpenIMSDK.set_global_recv_message_opt(
+        openIMSDK.libOpenIMSDK.set_self_info(
           openIMSDK.baseCallbackWrap<void>(resolve, reject),
           opid,
-          msgReceiveOptType
+          JSON.stringify({
+            globalRecvMsgOpt: msgReceiveOptType,
+          })
         );
       }),
   };
@@ -90,10 +85,10 @@ export interface UserModuleApi {
     params: PartialUserItem,
     opid?: string
   ) => Promise<BaseResponse<void>>;
-  getUsersInfoWithCache: (
-    params: GetUserInfoWithCacheParams,
+  getUsersInfo: (
+    params: string[],
     opid?: string
-  ) => Promise<BaseResponse<FullUserItemWithCache[]>>;
+  ) => Promise<BaseResponse<PublicUserItem[]>>;
   subscribeUsersStatus: (
     userIDList: string[],
     opid?: string

@@ -1,4 +1,4 @@
-import { ipcMain, WebContents } from 'electron';
+import { ipcMain, powerMonitor, WebContents } from 'electron';
 import { CbEvents } from '@openim/wasm-client-sdk';
 import OpenIMSDK from './core';
 
@@ -10,8 +10,18 @@ class OpenIMSDKMain {
     if (webContent) {
       this.webContents = [webContent];
     }
+    this.systemStateHandler();
     this.initMethodsHandler();
   }
+
+  private systemStateHandler = () => {
+    powerMonitor.on('suspend', () => {
+      this.sdk.setAppBackgroundStatus(true);
+    });
+    powerMonitor.on('resume', () => {
+      this.sdk.setAppBackgroundStatus(false);
+    });
+  };
 
   private initMethodsHandler = () => {
     ipcMain.handle('openim-sdk-ipc-methods', async (_, method, ...args) => {

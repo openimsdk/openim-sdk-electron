@@ -12,8 +12,10 @@ import {
   SetConversationExParams,
   SetConversationMsgDestructTimeParams,
   SetConversationMsgDestructParams,
+  SetConversationParams,
 } from '@openim/wasm-client-sdk/lib/types/params';
 import { ConversationItem } from '@openim/wasm-client-sdk/lib/types/entity';
+import { GroupAtType } from '@openim/wasm-client-sdk';
 
 export function setupConversationModule(openIMSDK: OpenIMSDK) {
   return {
@@ -47,11 +49,13 @@ export function setupConversationModule(openIMSDK: OpenIMSDK) {
       }),
     setConversationEx: (params: SetConversationExParams, opid = uuidV4()) =>
       new Promise<BaseResponse<void>>((resolve, reject) => {
-        openIMSDK.libOpenIMSDK.set_conversation_ex(
+        openIMSDK.libOpenIMSDK.set_conversation(
           openIMSDK.baseCallbackWrap<void>(resolve, reject),
           opid,
           params.conversationID,
-          params.ex
+          JSON.stringify({
+            ex: params.ex,
+          })
         );
       }),
     getMultipleConversation: (conversationIDList: string, opid = uuidV4()) =>
@@ -101,13 +105,24 @@ export function setupConversationModule(openIMSDK: OpenIMSDK) {
           params.draftText
         );
       }),
-    pinConversation: (params: SetConversationPinParams, opid = uuidV4()) =>
+    setConversation: (params: SetConversationParams, opid = uuidV4()) =>
       new Promise<BaseResponse<void>>((resolve, reject) => {
-        openIMSDK.libOpenIMSDK.pin_conversation(
+        openIMSDK.libOpenIMSDK.set_conversation(
           openIMSDK.baseCallbackWrap<void>(resolve, reject),
           opid,
           params.conversationID,
-          params.isPinned ? 1 : 0
+          JSON.stringify(params)
+        );
+      }),
+    pinConversation: (params: SetConversationPinParams, opid = uuidV4()) =>
+      new Promise<BaseResponse<void>>((resolve, reject) => {
+        openIMSDK.libOpenIMSDK.set_conversation(
+          openIMSDK.baseCallbackWrap<void>(resolve, reject),
+          opid,
+          params.conversationID,
+          JSON.stringify({
+            isPinned: params.isPinned,
+          })
         );
       }),
     setConversationRecvMessageOpt: (
@@ -115,11 +130,13 @@ export function setupConversationModule(openIMSDK: OpenIMSDK) {
       opid = uuidV4()
     ) =>
       new Promise<BaseResponse<void>>((resolve, reject) => {
-        openIMSDK.libOpenIMSDK.set_conversation_recv_message_opt(
+        openIMSDK.libOpenIMSDK.set_conversation(
           openIMSDK.baseCallbackWrap<void>(resolve, reject),
           opid,
           params.conversationID,
-          params.opt
+          JSON.stringify({
+            recvMsgOpt: params.opt,
+          })
         );
       }),
     setConversationPrivateChat: (
@@ -127,11 +144,13 @@ export function setupConversationModule(openIMSDK: OpenIMSDK) {
       opid = uuidV4()
     ) =>
       new Promise<BaseResponse<void>>((resolve, reject) => {
-        openIMSDK.libOpenIMSDK.set_conversation_private_chat(
+        openIMSDK.libOpenIMSDK.set_conversation(
           openIMSDK.baseCallbackWrap<void>(resolve, reject),
           opid,
           params.conversationID,
-          params.isPrivate ? 1 : 0
+          JSON.stringify({
+            isPrivateChat: params.isPrivate,
+          })
         );
       }),
     setConversationBurnDuration: (
@@ -139,19 +158,24 @@ export function setupConversationModule(openIMSDK: OpenIMSDK) {
       opid = uuidV4()
     ) =>
       new Promise<BaseResponse<void>>((resolve, reject) => {
-        openIMSDK.libOpenIMSDK.set_conversation_burn_duration(
+        openIMSDK.libOpenIMSDK.set_conversation(
           openIMSDK.baseCallbackWrap<void>(resolve, reject),
           opid,
           params.conversationID,
-          params.burnDuration
+          JSON.stringify({
+            burnDuration: params.burnDuration,
+          })
         );
       }),
-    resetConversationGroupAtType: (groupID: string, opid = uuidV4()) =>
+    resetConversationGroupAtType: (conversationID: string, opid = uuidV4()) =>
       new Promise<BaseResponse<void>>((resolve, reject) => {
-        openIMSDK.libOpenIMSDK.reset_conversation_group_at_type(
+        openIMSDK.libOpenIMSDK.set_conversation(
           openIMSDK.baseCallbackWrap<void>(resolve, reject),
           opid,
-          groupID
+          conversationID,
+          JSON.stringify({
+            groupAtType: GroupAtType.AtNormal,
+          })
         );
       }),
     hideConversation: (conversationID: string, opid = uuidV4()) =>
@@ -196,11 +220,13 @@ export function setupConversationModule(openIMSDK: OpenIMSDK) {
       opid = uuidV4()
     ) =>
       new Promise<BaseResponse<void>>((resolve, reject) => {
-        openIMSDK.libOpenIMSDK.set_conversation_msg_destruct_time(
+        openIMSDK.libOpenIMSDK.set_conversation(
           openIMSDK.baseCallbackWrap<void>(resolve, reject),
           opid,
           params.conversationID,
-          params.msgDestructTime
+          JSON.stringify({
+            msgDestructTime: params.msgDestructTime,
+          })
         );
       }),
     setConversationIsMsgDestruct: (
@@ -208,11 +234,11 @@ export function setupConversationModule(openIMSDK: OpenIMSDK) {
       opid = uuidV4()
     ) =>
       new Promise<BaseResponse<void>>((resolve, reject) => {
-        openIMSDK.libOpenIMSDK.set_conversation_is_msg_destruct(
+        openIMSDK.libOpenIMSDK.set_conversation(
           openIMSDK.baseCallbackWrap<void>(resolve, reject),
           opid,
           params.conversationID,
-          params.isMsgDestruct ? 1 : 0
+          JSON.stringify({ isMsgDestruct: params.isMsgDestruct })
         );
       }),
   };
@@ -255,6 +281,10 @@ export interface ConversationModuleApi {
     params: SplitConversationParams,
     opid?: string
   ) => Promise<BaseResponse<void>>;
+  setConversation: (
+    params: SetConversationParams,
+    opid?: string
+  ) => Promise<BaseResponse<void>>;
   setConversationRecvMessageOpt: (
     params: SetConversationRecvOptParams,
     opid?: string
@@ -268,7 +298,7 @@ export interface ConversationModuleApi {
     opid?: string
   ) => Promise<BaseResponse<void>>;
   resetConversationGroupAtType: (
-    groupID: string,
+    conversationID: string,
     opid?: string
   ) => Promise<BaseResponse<void>>;
   hideConversation: (
