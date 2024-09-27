@@ -1,5 +1,11 @@
 import { contextBridge, ipcRenderer } from 'electron';
 
+const updateOnlineStatus = () =>
+  ipcRenderer.invoke('openim-sdk-ipc-methods', 'networkStatusChanged');
+
+window.addEventListener('online', updateOnlineStatus);
+window.addEventListener('offline', updateOnlineStatus);
+
 contextBridge.exposeInMainWorld('openIMRenderApi', {
   subscribe: (channel: string, callback: (...args: any[]) => void) => {
     const subscription = (_: unknown, ...args: any[]) => callback(...args);

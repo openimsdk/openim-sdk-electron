@@ -158,18 +158,6 @@ declare module 'libOpenIMSDK' {
       operationID: string,
       conversationIDList: string
     ): void;
-    set_conversation_msg_destruct_time(
-      cCallback: CB_S_I_S_S,
-      operationID: string,
-      conversationID: string,
-      msgDestructTime: number
-    ): void;
-    set_conversation_is_msg_destruct(
-      cCallback: CB_S_I_S_S,
-      operationID: string,
-      conversationID: string,
-      isMsgDestruct: number
-    ): void;
     send_group_message_read_receipt(
       cCallback: CB_S_I_S_S,
       operationID: string,
@@ -190,57 +178,23 @@ declare module 'libOpenIMSDK' {
       operationID: string,
       conversationID: string
     ): void;
-    get_conversation_recv_message_opt(
-      cCallback: CB_S_I_S_S,
-      operationID: string,
-      conversationIDList: string
-    ): void;
     set_conversation_draft(
       cCallback: CB_S_I_S_S,
       operationID: string,
       conversationID: string,
       draftText: string
     ): void;
-    reset_conversation_group_at_type(
-      cCallback: CB_S_I_S_S,
-      operationID: string,
-      conversationID: string
-    ): void;
-    pin_conversation(
+    set_conversation(
       cCallback: CB_S_I_S_S,
       operationID: string,
       conversationID: string,
-      isPinned: number
-    ): void;
-    set_conversation_private_chat(
-      cCallback: CB_S_I_S_S,
-      operationID: string,
-      conversationID: string,
-      isPrivate: number
-    ): void;
-    set_conversation_burn_duration(
-      cCallback: CB_S_I_S_S,
-      operationID: string,
-      conversationID: string,
-      duration: number
-    ): void;
-    set_conversation_recv_message_opt(
-      cCallback: CB_S_I_S_S,
-      operationID: string,
-      conversationID: string,
-      opt: number
+      conversationFields: string
     ): void;
     get_total_unread_msg_count(
       cCallback: CB_S_I_S_S,
       operationID: string
     ): void;
     get_at_all_tag(operationID: string): string;
-    set_conversation_ex(
-      cCallback: CB_S_I_S_S,
-      operationID: string,
-      conversationID: string,
-      ex: string
-    ): void;
     get_conversation_id_by_session_type(
       operationID: string,
       sourceID: string,
@@ -355,13 +309,7 @@ declare module 'libOpenIMSDK' {
       operationID: string,
       userIDs: string
     ): void;
-    get_users_info_with_cache(
-      cCallback: CB_S_I_S_S,
-      operationID: string,
-      userIDs: string,
-      groupID: string
-    ): void;
-    get_users_info_from_srv(
+    get_users_info(
       cCallback: CB_S_I_S_S,
       operationID: string,
       userIDs: string
@@ -370,11 +318,6 @@ declare module 'libOpenIMSDK' {
       cCallback: CB_S_I_S_S,
       operationID: string,
       userInfo: string
-    ): void;
-    set_global_recv_message_opt(
-      cCallback: CB_S_I_S_S,
-      operationID: string,
-      opt: number
     ): void;
     get_self_user_info(cCallback: CB_S_I_S_S, operationID: string): void;
     update_msg_sender_info(
@@ -406,25 +349,25 @@ declare module 'libOpenIMSDK' {
     get_specified_friends_info(
       cCallback: CB_S_I_S_S,
       operationID: string,
-      userIDList: string
+      userIDList: string,
+      filterBlack?: number
     ): void;
-    get_friend_list(cCallback: CB_S_I_S_S, operationID: string): void;
+    get_friend_list(
+      cCallback: CB_S_I_S_S,
+      operationID: string,
+      filterBlack?: number
+    ): void;
     get_friend_list_page(
       cCallback: CB_S_I_S_S,
       operationID: string,
       offset: number,
-      count: number
+      count: number,
+      filterBlack?: number
     ): void;
     search_friends(
       cCallback: CB_S_I_S_S,
       operationID: string,
       searchParam: string
-    ): void;
-    set_friends_ex(
-      cCallback: CB_S_I_S_S,
-      operationID: string,
-      toUserIDs: string,
-      ex: string
     ): void;
     check_friend(
       cCallback: CB_S_I_S_S,
@@ -436,10 +379,10 @@ declare module 'libOpenIMSDK' {
       operationID: string,
       userIDReqMsg: string
     ): void;
-    set_friend_remark(
+    update_friends(
       cCallback: CB_S_I_S_S,
       operationID: string,
-      userIDRemark: string
+      friendInfos: string
     ): void;
     delete_friend(
       cCallback: CB_S_I_S_S,
@@ -512,13 +455,6 @@ declare module 'libOpenIMSDK' {
       cGroupID: string,
       cUserID: string,
       cMutedSeconds: number
-    ): void;
-    set_group_member_role_level(
-      cCallback: CB_S_I_S_S,
-      operationID: string,
-      cGroupID: string,
-      cUserID: string,
-      cRoleLevel: number
     ): void;
     set_group_member_info(
       cCallback: CB_S_I_S_S,
@@ -702,36 +638,6 @@ declare module 'libOpenIMSDK' {
     get_signaling_invitation_info_start_app(
       cCallback: CB_S_I_S_S,
       operationID: string
-    ): void;
-    signaling_create_meeting(
-      cCallback: CB_S_I_S_S,
-      operationID: string,
-      cSignalingCreateMeetingReq: string
-    ): void;
-    signaling_join_meeting(
-      cCallback: CB_S_I_S_S,
-      operationID: string,
-      cSignalingJoinMeetingReq: string
-    ): void;
-    signaling_update_meeting_info(
-      cCallback: CB_S_I_S_S,
-      operationID: string,
-      cSignalingUpdateMeetingInfoReq: string
-    ): void;
-    signaling_close_room(
-      cCallback: CB_S_I_S_S,
-      operationID: string,
-      cRoomID: string
-    ): void;
-    signaling_get_meetings(cCallback: CB_S_I_S_S, operationID: string): void;
-    signaling_operate_stream(
-      cCallback: CB_S_I_S_S,
-      operationID: string,
-      cStreamType: string,
-      cRoomID: string,
-      cUserID: string,
-      mute: number,
-      muteAll: number
     ): void;
     signaling_send_custom_signal(
       cCallback: CB_S_I_S_S,

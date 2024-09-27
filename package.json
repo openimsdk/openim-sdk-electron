@@ -1,6 +1,6 @@
 {
   "name": "@openim/electron-client-sdk",
-  "version": "1.0.9",
+  "version": "1.1.0",
   "description": "open im sdk for node",
   "source": "src/index.ts",
   "main": "lib/index.js",
@@ -43,9 +43,9 @@
   "devDependencies": {
     "@commitlint/cli": "^16.2.4",
     "@commitlint/config-conventional": "^16.2.4",
+    "@openim/wasm-client-sdk": "^3.8.2-beta.4",
     "@rollup/plugin-alias": "^5.1.0",
     "@rollup/plugin-terser": "^0.4.4",
-    "@openim/wasm-client-sdk": "^3.8.0",
     "@types/ffi-napi": "^4.0.10",
     "@types/node": "^12.20.55",
     "@types/uuid": "^8.3.4",
@@ -80,7 +80,7 @@
     "uuid": "^9.0.0"
   },
   "peerDependencies": {
-    "@openim/wasm-client-sdk": "^3.8.0",
+    "@openim/wasm-client-sdk": "^3.8.2-beta.3",
     "electron": ">=12.0.0"
   }
 }
