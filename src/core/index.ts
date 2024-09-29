@@ -60,9 +60,16 @@ class OpenIMSDK
   listenerCallback: koffi.IKoffiRegisteredCallback;
   lib: koffi.IKoffiLib;
   enterprise: boolean;
+  basertc: boolean;
 
-  constructor(libPath: string, emitProxy?: EmitProxy, enterprise = false) {
+  constructor(
+    libPath: string,
+    emitProxy?: EmitProxy,
+    enterprise = false,
+    basertc = false
+  ) {
     super();
+    this.basertc = basertc;
     this.enterprise = enterprise;
     this.lib = koffi.load(libPath);
     this.baseCallbackProto = koffi.proto('__stdcall', 'baseCallback', 'void', [
@@ -838,19 +845,7 @@ class OpenIMSDK
     ]);
 
     // advance
-    if (this.enterprise) {
-      this.libOpenIMSDK.send_group_message_read_receipt = this.lib.func(
-        '__stdcall',
-        'send_group_message_read_receipt',
-        'void',
-        ['baseCallback *', 'str', 'str', 'str']
-      );
-      this.libOpenIMSDK.get_group_message_reader_list = this.lib.func(
-        '__stdcall',
-        'get_group_message_reader_list',
-        'void',
-        ['baseCallback *', 'str', 'str', 'str', 'int', 'int', 'int']
-      );
+    if (this.basertc || this.enterprise) {
       this.libOpenIMSDK.set_signaling_listener = this.lib.func(
         '__stdcall',
         'set_signaling_listener',
@@ -925,6 +920,20 @@ class OpenIMSDK
         'signaling_send_custom_signal',
         'void',
         ['baseCallback *', 'str', 'str', 'str']
+      );
+    }
+    if (this.enterprise) {
+      this.libOpenIMSDK.send_group_message_read_receipt = this.lib.func(
+        '__stdcall',
+        'send_group_message_read_receipt',
+        'void',
+        ['baseCallback *', 'str', 'str', 'str']
+      );
+      this.libOpenIMSDK.get_group_message_reader_list = this.lib.func(
+        '__stdcall',
+        'get_group_message_reader_list',
+        'void',
+        ['baseCallback *', 'str', 'str', 'str', 'int', 'int', 'int']
       );
     }
   };
@@ -1075,7 +1084,7 @@ class OpenIMSDK
     this.libOpenIMSDK.set_advanced_msg_listener(this.listenerCallback);
     this.libOpenIMSDK.set_batch_msg_listener(this.listenerCallback);
     this.libOpenIMSDK.set_custom_business_listener(this.listenerCallback);
-    if (this.enterprise) {
+    if (this.enterprise || this.basertc) {
       this.libOpenIMSDK.set_signaling_listener(this.listenerCallback);
     }
   };

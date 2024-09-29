@@ -5,8 +5,13 @@ import OpenIMSDK from './core';
 class OpenIMSDKMain {
   private sdk: OpenIMSDK;
   private webContents: WebContents[] = [];
-  constructor(path: string, webContent?: WebContents, enterprise = false) {
-    this.sdk = new OpenIMSDK(path, this.emitProxy, enterprise);
+  constructor(
+    path: string,
+    webContent?: WebContents,
+    enterprise = false,
+    basertc = false
+  ) {
+    this.sdk = new OpenIMSDK(path, this.emitProxy, enterprise, basertc);
     if (webContent) {
       this.webContents = [webContent];
     }
