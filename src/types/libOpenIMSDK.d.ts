@@ -263,6 +263,18 @@ declare module 'libOpenIMSDK' {
       clientMsgID: string
     ): void;
     hide_all_conversations(cCallback: CB_S_I_S_S, operationID: string): void;
+    change_input_states(
+      cCallback: CB_S_I_S_S,
+      operationID: string,
+      conversationID: string,
+      focus: number
+    ): void;
+    get_input_states(
+      cCallback: CB_S_I_S_S,
+      operationID: string,
+      conversationID: string,
+      userID: string
+    ): void;
     delete_all_msg_from_local_and_svr(
       cCallback: CB_S_I_S_S,
       operationID: string
