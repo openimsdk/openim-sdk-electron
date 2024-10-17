@@ -130,12 +130,13 @@ export const eventMapping: Record<NativeEvent, CbEvents> = {
   [NativeEvent.RECV_MESSAGE_EXTENSIONS_CHANGED]: CbEvents.UnUsedEvent,
   [NativeEvent.RECV_MESSAGE_EXTENSIONS_DELETED]: CbEvents.UnUsedEvent,
   [NativeEvent.RECV_MESSAGE_EXTENSIONS_ADDED]: CbEvents.UnUsedEvent,
-  [NativeEvent.RECV_OFFLINE_NEW_MESSAGE]: CbEvents.UnUsedEvent,
+  [NativeEvent.RECV_OFFLINE_NEW_MESSAGE]: CbEvents.OnRecvOfflineNewMessage,
   [NativeEvent.MSG_DELETED]: CbEvents.UnUsedEvent,
-  [NativeEvent.RECV_OFFLINE_NEW_MESSAGES]: CbEvents.UnUsedEvent,
+  [NativeEvent.RECV_OFFLINE_NEW_MESSAGES]: CbEvents.OnRecvOfflineNewMessages,
   [NativeEvent.MESSAGE_KV_INFO_CHANGED]: CbEvents.UnUsedEvent,
-  [NativeEvent.CONVERSATION_USER_INPUT_STATUS_CHANGED]: CbEvents.UnUsedEvent,
-  [NativeEvent.RECV_ONLINE_ONLY_MESSAGE]: CbEvents.UnUsedEvent,
+  [NativeEvent.CONVERSATION_USER_INPUT_STATUS_CHANGED]:
+    CbEvents.OnConversationUserInputStatusChanged,
+  [NativeEvent.RECV_ONLINE_ONLY_MESSAGE]: CbEvents.OnRecvOnlineOnlyMessage,
   [NativeEvent.RECV_NEW_INVITATION]: CbEvents.OnReceiveNewInvitation,
   [NativeEvent.INVITEE_ACCEPTED]: CbEvents.OnInviteeAccepted,
   [NativeEvent.INVITEE_ACCEPTED_BY_OTHER_DEVICE]:

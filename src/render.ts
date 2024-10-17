@@ -36,6 +36,10 @@ type IMSDKInterface = Omit<WasmInterface, 'login'> & {
   /**
    * @access only for electron
    */
+  unInitSDK: (opid?: string) => Promise<void>;
+  /**
+   * @access only for electron
+   */
   createImageMessage: (
     imagePath: string,
     opid?: string

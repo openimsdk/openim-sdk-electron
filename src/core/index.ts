@@ -462,6 +462,18 @@ class OpenIMSDK
       'void',
       ['baseCallback *', 'str', 'str', 'str']
     );
+    this.libOpenIMSDK.change_input_states = this.lib.func(
+      '__stdcall',
+      'change_input_states',
+      'void',
+      ['baseCallback *', 'str', 'str', 'int']
+    );
+    this.libOpenIMSDK.get_input_states = this.lib.func(
+      '__stdcall',
+      'get_input_states',
+      'void',
+      ['baseCallback *', 'str', 'str', 'str']
+    );
     this.libOpenIMSDK.hide_all_conversations = this.lib.func(
       '__stdcall',
       'hide_all_conversations',
@@ -1127,7 +1139,7 @@ class OpenIMSDK
 
   unInitSDK = (opid = uuidV4()) =>
     this.asyncRetunWrap(
-      opid,
+      `unInitSDK-${opid}`,
       this.libOpenIMSDK.un_init_sdk(`unInitSDK-${opid}`)
     );
 
@@ -1345,6 +1357,8 @@ class OpenIMSDK
   deleteConversationAndDeleteAllMsg!: ConversationModuleApi['deleteConversationAndDeleteAllMsg'];
   setConversationMsgDestructTime!: ConversationModuleApi['setConversationMsgDestructTime'];
   setConversationIsMsgDestruct!: ConversationModuleApi['setConversationIsMsgDestruct'];
+  changeInputStates!: ConversationModuleApi['changeInputStates'];
+  getInputStates!: ConversationModuleApi['getInputStates'];
 
   // implements message api
   createTextMessage!: MessageModuleApi['createTextMessage'];

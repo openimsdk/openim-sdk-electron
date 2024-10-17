@@ -13,9 +13,11 @@ import {
   SetConversationMsgDestructTimeParams,
   SetConversationMsgDestructParams,
   SetConversationParams,
+  ChangeInputStatesParams,
+  GetInputstatesParams,
 } from '@openim/wasm-client-sdk/lib/types/params';
 import { ConversationItem } from '@openim/wasm-client-sdk/lib/types/entity';
-import { GroupAtType } from '@openim/wasm-client-sdk';
+import { GroupAtType, Platform } from '@openim/wasm-client-sdk';
 
 export function setupConversationModule(openIMSDK: OpenIMSDK) {
   return {
@@ -241,6 +243,24 @@ export function setupConversationModule(openIMSDK: OpenIMSDK) {
           JSON.stringify({ isMsgDestruct: params.isMsgDestruct })
         );
       }),
+    changeInputStates: (params: ChangeInputStatesParams, opid = uuidV4()) =>
+      new Promise<BaseResponse<void>>((resolve, reject) => {
+        openIMSDK.libOpenIMSDK.change_input_states(
+          openIMSDK.baseCallbackWrap<void>(resolve, reject),
+          opid,
+          params.conversationID,
+          params.focus ? 1 : 0
+        );
+      }),
+    getInputStates: (params: GetInputstatesParams, opid = uuidV4()) =>
+      new Promise<BaseResponse<Platform[]>>((resolve, reject) => {
+        openIMSDK.libOpenIMSDK.get_input_states(
+          openIMSDK.baseCallbackWrap<Platform[]>(resolve, reject),
+          opid,
+          params.conversationID,
+          params.userID
+        );
+      }),
   };
 }
 
@@ -322,4 +342,12 @@ export interface ConversationModuleApi {
     params: SetConversationMsgDestructParams,
     opid?: string
   ) => Promise<BaseResponse<void>>;
+  changeInputStates: (
+    params: ChangeInputStatesParams,
+    opid?: string
+  ) => Promise<BaseResponse<void>>;
+  getInputStates: (
+    params: GetInputstatesParams,
+    opid?: string
+  ) => Promise<BaseResponse<Platform[]>>;
 }
