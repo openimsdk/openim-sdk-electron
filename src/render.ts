@@ -24,7 +24,7 @@ type EmitterEvents = {
 
 type WasmInterface = ReturnType<typeof WasmGetSDK>;
 
-type IMSDKInterface = Omit<WasmInterface, 'login'> & {
+export type IMSDKInterface = Omit<WasmInterface, 'login'> & {
   login: (
     params: Partial<InitAndLoginConfig>,
     operationID?: string
