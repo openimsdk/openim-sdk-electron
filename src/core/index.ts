@@ -534,12 +534,6 @@ class OpenIMSDK
       'void',
       ['baseCallback *', 'str', 'str']
     );
-    this.libOpenIMSDK.get_users_info = this.lib.func(
-      '__stdcall',
-      'get_users_info',
-      'void',
-      ['baseCallback *', 'str', 'str']
-    );
     this.libOpenIMSDK.set_self_info = this.lib.func(
       '__stdcall',
       'set_self_info',
@@ -579,7 +573,7 @@ class OpenIMSDK
     // Friend functions
     this.libOpenIMSDK.update_friends = this.lib.func(
       '__stdcall',
-      'get_specified_friends_info',
+      'update_friends',
       'void',
       ['baseCallback *', 'str', 'str']
     );
