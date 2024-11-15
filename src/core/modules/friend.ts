@@ -132,9 +132,9 @@ export function setupFriendModule(openIMSDK: OpenIMSDK) {
       }),
 
     updateFriends: (params: UpdateFriendsParams, opid = uuidV4()) =>
-      new Promise<BaseResponse<FriendUserItem[]>>((resolve, reject) => {
+      new Promise<BaseResponse<void>>((resolve, reject) => {
         openIMSDK.libOpenIMSDK.update_friends(
-          openIMSDK.baseCallbackWrap<FriendUserItem[]>(resolve, reject),
+          openIMSDK.baseCallbackWrap<void>(resolve, reject),
           opid,
           JSON.stringify(params)
         );
