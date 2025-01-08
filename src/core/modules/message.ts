@@ -28,6 +28,7 @@ import {
   SoundMsgParamsByURL,
   SendGroupReadReceiptParams,
   GetGroupMessageReaderParams,
+  FetchSurroundingParams,
 } from '@openim/wasm-client-sdk/lib/types/params';
 import {
   VideoMsgByPathParams,
@@ -389,6 +390,22 @@ export function setupMessageModule(openIMSDK: OpenIMSDK) {
           JSON.stringify(params)
         );
       }),
+    fetchSurroundingMessages: (
+      params: FetchSurroundingParams,
+      opid = uuidV4()
+    ) =>
+      new Promise<BaseResponse<{ messageList: MessageItem[] }>>(
+        (resolve, reject) => {
+          openIMSDK.libOpenIMSDK.fetch_surrounding_messages(
+            openIMSDK.baseCallbackWrap<{ messageList: MessageItem[] }>(
+              resolve,
+              reject
+            ),
+            opid,
+            JSON.stringify(params)
+          );
+        }
+      ),
     findMessageList: (params: FindMessageParams[], opid = uuidV4()) =>
       new Promise<BaseResponse<MessageItem[]>>((resolve, reject) => {
         openIMSDK.libOpenIMSDK.find_message_list(
@@ -586,6 +603,10 @@ export interface MessageModuleApi {
     params: GetAdvancedHistoryMsgParams,
     opid?: string
   ) => Promise<BaseResponse<AdvancedGetMessageResult>>;
+  fetchSurroundingMessages: (
+    params: FetchSurroundingParams,
+    opid?: string
+  ) => Promise<BaseResponse<{ messageList: MessageItem[] }>>;
   findMessageList: (
     params: FindMessageParams[],
     opid?: string
