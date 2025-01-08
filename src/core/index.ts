@@ -941,6 +941,12 @@ class OpenIMSDK
         'void',
         ['baseCallback *', 'str', 'str', 'str', 'int', 'int', 'int']
       );
+      this.libOpenIMSDK.fetch_surrounding_messages = this.lib.func(
+        '__stdcall',
+        'fetch_surrounding_messages',
+        'void',
+        ['baseCallback *', 'str', 'str']
+      );
     }
   };
 
@@ -1378,6 +1384,7 @@ class OpenIMSDK
   createFileMessageByURL!: MessageModuleApi['createFileMessageByURL'];
   getAdvancedHistoryMessageList!: MessageModuleApi['getAdvancedHistoryMessageList'];
   getAdvancedHistoryMessageListReverse!: MessageModuleApi['getAdvancedHistoryMessageListReverse'];
+  fetchSurroundingMessages!: MessageModuleApi['fetchSurroundingMessages'];
   sendMessage!: MessageModuleApi['sendMessage'];
   sendMessageNotOss!: MessageModuleApi['sendMessageNotOss'];
   findMessageList!: MessageModuleApi['findMessageList'];

@@ -233,6 +233,11 @@ declare module 'libOpenIMSDK' {
       operationID: string,
       getMessageOptions: string
     ): void;
+    fetch_surrounding_messages(
+      cCallback: CB_S_I_S_S,
+      operationID: string,
+      fetchSurroundingMessagesOptions: string
+    ): void;
     revoke_message(
       cCallback: CB_S_I_S_S,
       operationID: string,
