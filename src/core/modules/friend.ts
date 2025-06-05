@@ -6,6 +6,9 @@ import {
   AccessFriendApplicationParams,
   AddBlackParams,
   AddFriendParams,
+  GetFriendApplicationListAsApplicationParams,
+  GetFriendApplicationListAsRecipientParams,
+  GetSelfUnhandledApplyCountParams,
   GetSpecifiedFriendsParams,
   OffsetParams,
   PinFriendParams,
@@ -93,19 +96,45 @@ export function setupFriendModule(openIMSDK: OpenIMSDK) {
         );
       }),
 
-    getFriendApplicationListAsApplicant: (opid = uuidV4()) =>
+    getFriendApplicationListAsApplicant: (
+      params: GetFriendApplicationListAsApplicationParams = {
+        offset: 0,
+        count: 0,
+      },
+      opid = uuidV4()
+    ) =>
       new Promise<BaseResponse<FriendApplicationItem[]>>((resolve, reject) => {
         openIMSDK.libOpenIMSDK.get_friend_application_list_as_applicant(
           openIMSDK.baseCallbackWrap<FriendApplicationItem[]>(resolve, reject),
-          opid
+          opid,
+          JSON.stringify(params)
         );
       }),
 
-    getFriendApplicationListAsRecipient: (opid = uuidV4()) =>
+    getFriendApplicationListAsRecipient: (
+      params: GetFriendApplicationListAsRecipientParams = {
+        handleResults: [],
+        offset: 0,
+        count: 0,
+      },
+      opid = uuidV4()
+    ) =>
       new Promise<BaseResponse<FriendApplicationItem[]>>((resolve, reject) => {
         openIMSDK.libOpenIMSDK.get_friend_application_list_as_recipient(
           openIMSDK.baseCallbackWrap<FriendApplicationItem[]>(resolve, reject),
-          opid
+          opid,
+          JSON.stringify(params)
+        );
+      }),
+    getFriendApplicationUnhandledCount: (
+      params: GetSelfUnhandledApplyCountParams,
+      opid = uuidV4()
+    ) =>
+      new Promise<BaseResponse<number>>((resolve, reject) => {
+        openIMSDK.libOpenIMSDK.get_friend_application_unhandled_count(
+          openIMSDK.baseCallbackWrap<number>(resolve, reject),
+          opid,
+          JSON.stringify(params)
         );
       }),
 
@@ -227,11 +256,17 @@ export interface FriendModuleApi {
   ) => Promise<BaseResponse<void>>;
   getBlackList: (opid?: string) => Promise<BaseResponse<BlackUserItem[]>>;
   getFriendApplicationListAsApplicant: (
+    params: GetFriendApplicationListAsApplicationParams,
     opid?: string
   ) => Promise<BaseResponse<FriendApplicationItem[]>>;
   getFriendApplicationListAsRecipient: (
+    params: GetFriendApplicationListAsRecipientParams,
     opid?: string
   ) => Promise<BaseResponse<FriendApplicationItem[]>>;
+  getFriendApplicationUnhandledCount: (
+    params: GetSelfUnhandledApplyCountParams,
+    opid?: string
+  ) => Promise<BaseResponse<number>>;
   getFriendList: (
     filterBlack?: boolean,
     opid?: string

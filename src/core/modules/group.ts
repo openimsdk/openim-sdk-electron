@@ -20,6 +20,8 @@ import {
   TransferGroupParams,
   AccessToGroupParams,
   OffsetParams,
+  GetSelfUnhandledApplyCountParams,
+  GetGroupApplicationListParams,
 } from '@openim/wasm-client-sdk/lib/types/params';
 
 export function setupGroupModule(openIMSDK: OpenIMSDK) {
@@ -101,19 +103,49 @@ export function setupGroupModule(openIMSDK: OpenIMSDK) {
         );
       }),
 
-    getGroupApplicationListAsRecipient: (opid = uuidV4()) =>
+    getGroupApplicationListAsRecipient: (
+      params: GetGroupApplicationListParams = {
+        groupID: [],
+        handleResults: [],
+        offset: 0,
+        count: 0,
+      },
+      opid = uuidV4()
+    ) =>
       new Promise<BaseResponse<GroupApplicationItem[]>>((resolve, reject) => {
         openIMSDK.libOpenIMSDK.get_group_application_list_as_recipient(
           openIMSDK.baseCallbackWrap<GroupApplicationItem[]>(resolve, reject),
-          opid
+          opid,
+          JSON.stringify(params)
         );
       }),
 
-    getGroupApplicationListAsApplicant: (opid = uuidV4()) =>
+    getGroupApplicationListAsApplicant: (
+      params: GetGroupApplicationListParams = {
+        groupID: [],
+        handleResults: [],
+        offset: 0,
+        count: 0,
+      },
+      opid = uuidV4()
+    ) =>
       new Promise<BaseResponse<GroupApplicationItem[]>>((resolve, reject) => {
         openIMSDK.libOpenIMSDK.get_group_application_list_as_applicant(
           openIMSDK.baseCallbackWrap<GroupApplicationItem[]>(resolve, reject),
-          opid
+          opid,
+          JSON.stringify(params)
+        );
+      }),
+
+    getGroupApplicationUnhandledCount: (
+      params: GetSelfUnhandledApplyCountParams,
+      opid = uuidV4()
+    ) =>
+      new Promise<BaseResponse<number>>((resolve, reject) => {
+        openIMSDK.libOpenIMSDK.get_group_application_unhandled_count(
+          openIMSDK.baseCallbackWrap<number>(resolve, reject),
+          opid,
+          JSON.stringify(params)
         );
       }),
 
@@ -331,11 +363,17 @@ export interface GroupModuleApi {
     opid?: string
   ) => Promise<BaseResponse<void>>;
   getGroupApplicationListAsRecipient: (
+    params: GetGroupApplicationListParams,
     opid?: string
   ) => Promise<BaseResponse<GroupApplicationItem[]>>;
   getGroupApplicationListAsApplicant: (
+    params: GetGroupApplicationListParams,
     opid?: string
   ) => Promise<BaseResponse<GroupApplicationItem[]>>;
+  getGroupApplicationUnhandledCount: (
+    params: GetSelfUnhandledApplyCountParams,
+    opid?: string
+  ) => Promise<BaseResponse<number>>;
   acceptGroupApplication: (
     params: AccessGroupApplicationParams,
     opid?: string

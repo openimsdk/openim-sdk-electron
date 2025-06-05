@@ -623,13 +623,19 @@ class OpenIMSDK
       '__stdcall',
       'get_friend_application_list_as_recipient',
       'void',
-      ['baseCallback *', 'str']
+      ['baseCallback *', 'str', 'str']
     );
     this.libOpenIMSDK.get_friend_application_list_as_applicant = this.lib.func(
       '__stdcall',
       'get_friend_application_list_as_applicant',
       'void',
-      ['baseCallback *', 'str']
+      ['baseCallback *', 'str', 'str']
+    );
+    this.libOpenIMSDK.get_friend_application_unhandled_count = this.lib.func(
+      '__stdcall',
+      'get_friend_application_unhandled_count',
+      'void',
+      ['baseCallback *', 'str', 'str']
     );
     this.libOpenIMSDK.accept_friend_application = this.lib.func(
       '__stdcall',
@@ -789,13 +795,19 @@ class OpenIMSDK
       '__stdcall',
       'get_group_application_list_as_recipient',
       'void',
-      ['baseCallback *', 'str']
+      ['baseCallback *', 'str', 'str']
     );
     this.libOpenIMSDK.get_group_application_list_as_applicant = this.lib.func(
       '__stdcall',
       'get_group_application_list_as_applicant',
       'void',
-      ['baseCallback *', 'str']
+      ['baseCallback *', 'str', 'str']
+    );
+    this.libOpenIMSDK.get_group_application_unhandled_count = this.lib.func(
+      '__stdcall',
+      'get_group_application_unhandled_count',
+      'void',
+      ['baseCallback *', 'str', 'str']
     );
     this.libOpenIMSDK.accept_group_application = this.lib.func(
       '__stdcall',
@@ -1295,6 +1307,7 @@ class OpenIMSDK
   ) => Promise<BaseResponse<void>>;
   getFriendApplicationListAsApplicant!: FriendModuleApi['getFriendApplicationListAsApplicant'];
   getFriendApplicationListAsRecipient!: FriendModuleApi['getFriendApplicationListAsRecipient'];
+  getFriendApplicationUnhandledCount!: FriendModuleApi['getFriendApplicationUnhandledCount'];
   getFriendList!: FriendModuleApi['getFriendList'];
   getFriendListPage!: FriendModuleApi['getFriendListPage'];
   getSpecifiedFriendsInfo!: FriendModuleApi['getSpecifiedFriendsInfo'];
@@ -1315,6 +1328,7 @@ class OpenIMSDK
   setGroupInfo!: GroupModuleApi['setGroupInfo'];
   getGroupApplicationListAsRecipient!: GroupModuleApi['getGroupApplicationListAsRecipient'];
   getGroupApplicationListAsApplicant!: GroupModuleApi['getGroupApplicationListAsApplicant'];
+  getGroupApplicationUnhandledCount!: GroupModuleApi['getGroupApplicationUnhandledCount'];
   acceptGroupApplication!: GroupModuleApi['acceptGroupApplication'];
   refuseGroupApplication!: GroupModuleApi['refuseGroupApplication'];
   getGroupMemberList!: GroupModuleApi['getGroupMemberList'];

@@ -408,11 +408,18 @@ declare module 'libOpenIMSDK' {
     ): void;
     get_friend_application_list_as_recipient(
       cCallback: CB_S_I_S_S,
-      operationID: string
+      operationID: string,
+      param: string
     ): void;
     get_friend_application_list_as_applicant(
       cCallback: CB_S_I_S_S,
-      operationID: string
+      operationID: string,
+      param: string
+    ): void;
+    get_friend_application_unhandled_count(
+      cCallback: CB_S_I_S_S,
+      operationID: string,
+      param: string
     ): void;
     accept_friend_application(
       cCallback: CB_S_I_S_S,
@@ -569,11 +576,18 @@ declare module 'libOpenIMSDK' {
     ): void;
     get_group_application_list_as_recipient(
       cCallback: CB_S_I_S_S,
-      operationID: string
+      operationID: string,
+      param: string
     ): void;
     get_group_application_list_as_applicant(
       cCallback: CB_S_I_S_S,
-      operationID: string
+      operationID: string,
+      param: string
+    ): void;
+    get_group_application_unhandled_count(
+      cCallback: CB_S_I_S_S,
+      operationID: string,
+      param: string
     ): void;
     accept_group_application(
       cCallback: CB_S_I_S_S,
