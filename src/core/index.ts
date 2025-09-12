@@ -134,12 +134,6 @@ class OpenIMSDK
       'void',
       ['listenerCallback *']
     );
-    this.libOpenIMSDK.set_batch_msg_listener = this.lib.func(
-      '__stdcall',
-      'set_batch_msg_listener',
-      'void',
-      ['listenerCallback *']
-    );
     this.libOpenIMSDK.set_user_listener = this.lib.func(
       '__stdcall',
       'set_user_listener',
@@ -849,7 +843,7 @@ class OpenIMSDK
       '__stdcall',
       'upload_logs',
       'void',
-      ['baseCallback *', 'str', 'int', 'str', 'listenerCallback *']
+      ['baseCallback *', 'str', 'int', 'str', 'str', 'listenerCallback *']
     );
     this.libOpenIMSDK.logs = this.lib.func('__stdcall', 'logs', 'void', [
       'baseCallback *',
@@ -956,6 +950,36 @@ class OpenIMSDK
       this.libOpenIMSDK.fetch_surrounding_messages = this.lib.func(
         '__stdcall',
         'fetch_surrounding_messages',
+        'void',
+        ['baseCallback *', 'str', 'str']
+      );
+      this.libOpenIMSDK.modify_message = this.lib.func(
+        '__stdcall',
+        'modify_message',
+        'void',
+        ['baseCallback *', 'str', 'str']
+      );
+      this.libOpenIMSDK.delete_messages = this.lib.func(
+        '__stdcall',
+        'delete_messages',
+        'void',
+        ['baseCallback *', 'str', 'str']
+      );
+      this.libOpenIMSDK.delete_user_all_messages_in_conv = this.lib.func(
+        '__stdcall',
+        'delete_user_all_messages_in_conv',
+        'void',
+        ['baseCallback *', 'str', 'str', 'str']
+      );
+      this.libOpenIMSDK.set_conversation_pinned_msg = this.lib.func(
+        '__stdcall',
+        'set_conversation_pinned_msg',
+        'void',
+        ['baseCallback *', 'str', 'str', 'str', 'int']
+      );
+      this.libOpenIMSDK.get_conversation_pinned_msg = this.lib.func(
+        '__stdcall',
+        'get_conversation_pinned_msg',
         'void',
         ['baseCallback *', 'str', 'str']
       );
@@ -1106,7 +1130,6 @@ class OpenIMSDK
     this.libOpenIMSDK.set_group_listener(this.listenerCallback);
     this.libOpenIMSDK.set_conversation_listener(this.listenerCallback);
     this.libOpenIMSDK.set_advanced_msg_listener(this.listenerCallback);
-    this.libOpenIMSDK.set_batch_msg_listener(this.listenerCallback);
     this.libOpenIMSDK.set_custom_business_listener(this.listenerCallback);
     if (this.enterprise || this.basertc) {
       this.libOpenIMSDK.set_signaling_listener(this.listenerCallback);
@@ -1188,6 +1211,7 @@ class OpenIMSDK
         this.baseCallbackWrap(resolve, reject),
         opid,
         params.line,
+        params.cancelID || opid,
         params.ex || '',
         this.listenerCallback
       );
@@ -1414,6 +1438,11 @@ class OpenIMSDK
   setMessageLocalEx!: MessageModuleApi['setMessageLocalEx'];
   sendGroupMessageReadReceipt!: MessageModuleApi['sendGroupMessageReadReceipt'];
   getGroupMessageReaderList!: MessageModuleApi['getGroupMessageReaderList'];
+  modifyMessage!: MessageModuleApi['modifyMessage'];
+  deleteMessages!: MessageModuleApi['deleteMessages'];
+  deleteUserAllMessagesInConv!: MessageModuleApi['deleteUserAllMessagesInConv'];
+  setConversationPinnedMsg!: MessageModuleApi['setConversationPinnedMsg'];
+  getConversationPinnedMsg!: MessageModuleApi['getConversationPinnedMsg'];
 
   // implements signaling api
   signalingInviteInGroup!: SignalingModuleApi['signalingInviteInGroup'];

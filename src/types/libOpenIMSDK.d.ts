@@ -686,6 +686,7 @@ declare module 'libOpenIMSDK' {
       cCallback: CB_S_I_S_S,
       operationID: string,
       line: number,
+      cancelID: string,
       ex: string,
       pCallback: CB_I_S
     ): void;
@@ -698,6 +699,34 @@ declare module 'libOpenIMSDK' {
       msgs: string,
       err: string,
       keyAndValue: string
+    ): void;
+    modify_message(
+      cCallback: CB_S_I_S_S,
+      operationID: string,
+      req: string
+    ): void;
+    delete_messages(
+      cCallback: CB_S_I_S_S,
+      operationID: string,
+      req: string
+    ): void;
+    delete_user_all_messages_in_conv(
+      cCallback: CB_S_I_S_S,
+      operationID: string,
+      conversationID: string,
+      userID: string
+    ): void;
+    set_conversation_pinned_msg(
+      cCallback: CB_S_I_S_S,
+      operationID: string,
+      conversationID: string,
+      clientMsgID: string,
+      pinned: number
+    ): void;
+    get_conversation_pinned_msg(
+      cCallback: CB_S_I_S_S,
+      operationID: string,
+      conversationID: string
     ): void;
   }
   const lib: LibOpenIMSDK;

@@ -57,6 +57,9 @@ export enum NativeEvent {
   COMPLETE,
   CONVERSATION_USER_INPUT_STATUS_CHANGED,
   RECV_ONLINE_ONLY_MESSAGE,
+  CHANGED_PINNED_MESSAGE,
+  DELETE_USER_ALL_MSGS_IN_CONV,
+  MESSAGE_MODIFIED,
   USER_TOKEN_INVALID,
   RECV_NEW_INVITATION,
   INVITEE_ACCEPTED,
@@ -153,4 +156,8 @@ export const eventMapping: Record<NativeEvent, CbEvents> = {
   [NativeEvent.STREAM_CHANGE]: CbEvents.OnStreamChange,
   [NativeEvent.RECEIVE_CUSTOM_SIGNAL]: CbEvents.OnReceiveCustomSignal,
   [NativeEvent.ON_PROGRESS]: CbEvents.OnUploadLogsProgress,
+  [NativeEvent.CHANGED_PINNED_MESSAGE]: CbEvents.OnChangedPinnedMsg,
+  [NativeEvent.DELETE_USER_ALL_MSGS_IN_CONV]:
+    CbEvents.OnDeleteUserAllMsgsInConv,
+  [NativeEvent.MESSAGE_MODIFIED]: CbEvents.OnMessageModified,
 };

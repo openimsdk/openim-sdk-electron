@@ -29,6 +29,10 @@ import {
   SendGroupReadReceiptParams,
   GetGroupMessageReaderParams,
   FetchSurroundingParams,
+  ModifyMessageParams,
+  DeleteMessagesParams,
+  SetConversationPinnedMsgParams,
+  DeleteUserMsgInConvParams,
 } from '@openim/wasm-client-sdk/lib/types/params';
 import {
   VideoMsgByPathParams,
@@ -477,6 +481,55 @@ export function setupMessageModule(openIMSDK: OpenIMSDK) {
           params.count
         );
       }),
+    modifyMessage: (params: ModifyMessageParams, opid = uuidV4()) =>
+      new Promise<BaseResponse<MessageItem>>((resolve, reject) => {
+        openIMSDK.libOpenIMSDK.modify_message(
+          openIMSDK.baseCallbackWrap<MessageItem>(resolve, reject),
+          opid,
+          JSON.stringify(params)
+        );
+      }),
+    deleteMessages: (params: DeleteMessagesParams, opid = uuidV4()) =>
+      new Promise<BaseResponse<void>>((resolve, reject) => {
+        openIMSDK.libOpenIMSDK.delete_messages(
+          openIMSDK.baseCallbackWrap<void>(resolve, reject),
+          opid,
+          JSON.stringify(params)
+        );
+      }),
+    deleteUserAllMessagesInConv: (
+      params: DeleteUserMsgInConvParams,
+      opid = uuidV4()
+    ) =>
+      new Promise<BaseResponse<void>>((resolve, reject) => {
+        openIMSDK.libOpenIMSDK.delete_user_all_messages_in_conv(
+          openIMSDK.baseCallbackWrap<void>(resolve, reject),
+          opid,
+          params.conversationID,
+          params.userID
+        );
+      }),
+    setConversationPinnedMsg: (
+      params: SetConversationPinnedMsgParams,
+      opid = uuidV4()
+    ) =>
+      new Promise<BaseResponse<void>>((resolve, reject) => {
+        openIMSDK.libOpenIMSDK.set_conversation_pinned_msg(
+          openIMSDK.baseCallbackWrap<void>(resolve, reject),
+          opid,
+          params.conversationID,
+          params.clientMsgID,
+          params.pinned ? 1 : 0
+        );
+      }),
+    getConversationPinnedMsg: (params: string, opid = uuidV4()) =>
+      new Promise<BaseResponse<MessageItem[]>>((resolve, reject) => {
+        openIMSDK.libOpenIMSDK.get_conversation_pinned_msg(
+          openIMSDK.baseCallbackWrap<MessageItem[]>(resolve, reject),
+          opid,
+          params
+        );
+      }),
   };
 }
 
@@ -631,4 +684,24 @@ export interface MessageModuleApi {
     params: GetGroupMessageReaderParams,
     opid?: string
   ) => Promise<BaseResponse<string[]>>;
+  modifyMessage: (
+    params: ModifyMessageParams,
+    opid?: string
+  ) => Promise<BaseResponse<MessageItem>>;
+  deleteMessages: (
+    params: DeleteMessagesParams,
+    opid?: string
+  ) => Promise<BaseResponse<void>>;
+  deleteUserAllMessagesInConv: (
+    params: DeleteUserMsgInConvParams,
+    opid?: string
+  ) => Promise<BaseResponse<void>>;
+  setConversationPinnedMsg: (
+    params: SetConversationPinnedMsgParams,
+    opid?: string
+  ) => Promise<BaseResponse<void>>;
+  getConversationPinnedMsg: (
+    params: string,
+    opid?: string
+  ) => Promise<BaseResponse<MessageItem[]>>;
 }

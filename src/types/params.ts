@@ -35,6 +35,7 @@ export type FileMsgByPathParams = {
 
 export type UploadLogsParams = {
   line: number;
+  cancelID?: string;
   ex?: string;
 };
 
