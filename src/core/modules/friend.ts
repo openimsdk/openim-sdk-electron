@@ -194,6 +194,18 @@ export function setupFriendModule(openIMSDK: OpenIMSDK) {
         );
       }),
 
+    deleteFriendRequests: (
+      params: Array<{ fromUserID: string; toUserID: string }>,
+      opid = uuidV4()
+    ) =>
+      new Promise<BaseResponse<void>>((resolve, reject) => {
+        openIMSDK.libOpenIMSDK.delete_friend_requests(
+          openIMSDK.baseCallbackWrap<void>(resolve, reject),
+          opid,
+          JSON.stringify({ friendRequests: params })
+        );
+      }),
+
     removeBlack: (userID: string, opid = uuidV4()) =>
       new Promise<BaseResponse<void>>((resolve, reject) => {
         openIMSDK.libOpenIMSDK.remove_black(
@@ -285,6 +297,10 @@ export interface FriendModuleApi {
   ) => Promise<BaseResponse<FriendUserItem[]>>;
   refuseFriendApplication: (
     params: AccessFriendApplicationParams,
+    opid?: string
+  ) => Promise<BaseResponse<void>>;
+  deleteFriendRequests: (
+    params: Array<{ fromUserID: string; toUserID: string }>,
     opid?: string
   ) => Promise<BaseResponse<void>>;
   removeBlack: (userID: string, opid?: string) => Promise<BaseResponse<void>>;

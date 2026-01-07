@@ -177,6 +177,20 @@ export function setupGroupModule(openIMSDK: OpenIMSDK) {
         );
       }),
 
+    deleteGroupRequests: (
+      params: Array<{ fromUserID: string; groupID: string }>,
+      opid = uuidV4()
+    ) =>
+      new Promise<BaseResponse<void>>((resolve, reject) => {
+        openIMSDK.libOpenIMSDK.delete_group_requests(
+          openIMSDK.baseCallbackWrap<void>(resolve, reject),
+          opid,
+          JSON.stringify({
+            groupRequests: params,
+          })
+        );
+      }),
+
     getGroupMemberList: (params: GetGroupMemberParams, opid = uuidV4()) =>
       new Promise<BaseResponse<GroupMemberItem[]>>((resolve, reject) => {
         openIMSDK.libOpenIMSDK.get_group_member_list(
@@ -217,15 +231,6 @@ export function setupGroupModule(openIMSDK: OpenIMSDK) {
           openIMSDK.baseCallbackWrap<void>(resolve, reject),
           opid,
           JSON.stringify(params)
-        );
-      }),
-
-    getGroupMemberOwnerAndAdmin: (groupID: string, opid = uuidV4()) =>
-      new Promise<BaseResponse<GroupMemberItem[]>>((resolve, reject) => {
-        openIMSDK.libOpenIMSDK.get_group_member_owner_and_admin(
-          openIMSDK.baseCallbackWrap<GroupMemberItem[]>(resolve, reject),
-          opid,
-          groupID
         );
       }),
 
@@ -382,6 +387,10 @@ export interface GroupModuleApi {
     params: AccessGroupApplicationParams,
     opid?: string
   ) => Promise<BaseResponse<void>>;
+  deleteGroupRequests: (
+    params: Array<{ fromUserID: string; groupID: string }>,
+    opid?: string
+  ) => Promise<BaseResponse<void>>;
   getGroupMemberList: (
     params: GetGroupMemberParams,
     opid?: string
@@ -398,10 +407,6 @@ export interface GroupModuleApi {
     params: UpdateMemberInfoParams,
     opid?: string
   ) => Promise<BaseResponse<void>>;
-  getGroupMemberOwnerAndAdmin: (
-    groupID: string,
-    opid?: string
-  ) => Promise<BaseResponse<GroupMemberItem[]>>;
   getGroupMemberListByJoinTimeFilter: (
     params: GetGroupMemberByTimeParams,
     opid?: string

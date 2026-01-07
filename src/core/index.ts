@@ -643,6 +643,12 @@ class OpenIMSDK
       'void',
       ['baseCallback *', 'str', 'str']
     );
+    this.libOpenIMSDK.delete_friend_requests = this.lib.func(
+      '__stdcall',
+      'delete_friend_requests',
+      'void',
+      ['baseCallback *', 'str', 'str']
+    );
     this.libOpenIMSDK.add_black = this.lib.func(
       '__stdcall',
       'add_black',
@@ -740,12 +746,6 @@ class OpenIMSDK
       'void',
       ['baseCallback *', 'str', 'str', 'int', 'int', 'int']
     );
-    this.libOpenIMSDK.get_group_member_owner_and_admin = this.lib.func(
-      '__stdcall',
-      'get_group_member_owner_and_admin',
-      'void',
-      ['baseCallback *', 'str', 'str']
-    );
     this.libOpenIMSDK.get_group_member_list_by_join_time_filter = this.lib.func(
       '__stdcall',
       'get_group_member_list_by_join_time_filter',
@@ -814,6 +814,12 @@ class OpenIMSDK
       'refuse_group_application',
       'void',
       ['baseCallback *', 'str', 'str', 'str', 'str']
+    );
+    this.libOpenIMSDK.delete_group_requests = this.lib.func(
+      '__stdcall',
+      'delete_group_requests',
+      'void',
+      ['baseCallback *', 'str', 'str']
     );
     this.libOpenIMSDK.search_group_members = this.lib.func(
       '__stdcall',
@@ -982,6 +988,12 @@ class OpenIMSDK
         'get_conversation_pinned_msg',
         'void',
         ['baseCallback *', 'str', 'str']
+      );
+      this.libOpenIMSDK.create_markdown_message = this.lib.func(
+        '__stdcall',
+        'create_markdown_message',
+        'str',
+        ['str', 'str']
       );
     }
   };
@@ -1336,6 +1348,7 @@ class OpenIMSDK
   getFriendListPage!: FriendModuleApi['getFriendListPage'];
   getSpecifiedFriendsInfo!: FriendModuleApi['getSpecifiedFriendsInfo'];
   refuseFriendApplication!: FriendModuleApi['refuseFriendApplication'];
+  deleteFriendRequests!: FriendModuleApi['deleteFriendRequests'];
   removeBlack!: FriendModuleApi['removeBlack'];
   searchFriends!: FriendModuleApi['searchFriends'];
   setFriendRemark!: FriendModuleApi['setFriendRemark'];
@@ -1355,11 +1368,11 @@ class OpenIMSDK
   getGroupApplicationUnhandledCount!: GroupModuleApi['getGroupApplicationUnhandledCount'];
   acceptGroupApplication!: GroupModuleApi['acceptGroupApplication'];
   refuseGroupApplication!: GroupModuleApi['refuseGroupApplication'];
+  deleteGroupRequests!: GroupModuleApi['deleteGroupRequests'];
   getGroupMemberList!: GroupModuleApi['getGroupMemberList'];
   getSpecifiedGroupMembersInfo!: GroupModuleApi['getSpecifiedGroupMembersInfo'];
   searchGroupMembers!: GroupModuleApi['searchGroupMembers'];
   setGroupMemberInfo!: GroupModuleApi['setGroupMemberInfo'];
-  getGroupMemberOwnerAndAdmin!: GroupModuleApi['getGroupMemberOwnerAndAdmin'];
   getGroupMemberListByJoinTimeFilter!: GroupModuleApi['getGroupMemberListByJoinTimeFilter'];
   kickGroupMember!: GroupModuleApi['kickGroupMember'];
   changeGroupMemberMute!: GroupModuleApi['changeGroupMemberMute'];
@@ -1443,6 +1456,7 @@ class OpenIMSDK
   deleteUserAllMessagesInConv!: MessageModuleApi['deleteUserAllMessagesInConv'];
   setConversationPinnedMsg!: MessageModuleApi['setConversationPinnedMsg'];
   getConversationPinnedMsg!: MessageModuleApi['getConversationPinnedMsg'];
+  createMarkdownMessage!: MessageModuleApi['createMarkdownMessage'];
 
   // implements signaling api
   signalingInviteInGroup!: SignalingModuleApi['signalingInviteInGroup'];

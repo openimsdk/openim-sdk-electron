@@ -530,6 +530,11 @@ export function setupMessageModule(openIMSDK: OpenIMSDK) {
           params
         );
       }),
+    createMarkdownMessage: (content: string, opid = uuidV4()) =>
+      openIMSDK.asyncRetunWrap<MessageItem>(
+        opid,
+        openIMSDK.libOpenIMSDK.create_markdown_message(opid, content)
+      ),
   };
 }
 
@@ -704,4 +709,8 @@ export interface MessageModuleApi {
     params: string,
     opid?: string
   ) => Promise<BaseResponse<MessageItem[]>>;
+  createMarkdownMessage: (
+    content: string,
+    opid?: string
+  ) => Promise<BaseResponse<MessageItem>>;
 }

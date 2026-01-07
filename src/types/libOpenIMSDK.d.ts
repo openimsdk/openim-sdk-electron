@@ -34,6 +34,7 @@ declare module 'libOpenIMSDK' {
     get_login_status(operationID: string): number;
     get_login_user(): string;
     create_text_message(operationID: string, text: string): string;
+    create_markdown_message(operationID: string, text: string): string;
     create_advanced_text_message(
       operationID: string,
       text: string,
@@ -431,6 +432,11 @@ declare module 'libOpenIMSDK' {
       operationID: string,
       userIDHandleMsg: string
     ): void;
+    delete_friend_requests(
+      cCallback: CB_S_I_S_S,
+      operationID: string,
+      req: string
+    ): void;
     add_black(
       cCallback: CB_S_I_S_S,
       operationID: string,
@@ -533,11 +539,6 @@ declare module 'libOpenIMSDK' {
       cOffset: number,
       cCount: number
     ): void;
-    get_group_member_owner_and_admin(
-      cCallback: CB_S_I_S_S,
-      operationID: string,
-      cGroupID: string
-    ): void;
     get_group_member_list_by_join_time_filter(
       cCallback: CB_S_I_S_S,
       operationID: string,
@@ -602,6 +603,11 @@ declare module 'libOpenIMSDK' {
       cGroupID: string,
       cFromUserID: string,
       cHandleMsg: string
+    ): void;
+    delete_group_requests(
+      cCallback: CB_S_I_S_S,
+      operationID: string,
+      req: string
     ): void;
     set_group_member_nickname(
       cCallback: CB_S_I_S_S,
