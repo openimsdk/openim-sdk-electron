@@ -995,6 +995,86 @@ class OpenIMSDK
         'str',
         ['str', 'str']
       );
+      this.libOpenIMSDK.set_conversation_group_listener = this.lib.func(
+        '__stdcall',
+        'set_conversation_group_listener',
+        'void',
+        ['listenerCallback *']
+      );
+      this.libOpenIMSDK.create_conversation_group = this.lib.func(
+        '__stdcall',
+        'create_conversation_group',
+        'void',
+        ['baseCallback *', 'str', 'str']
+      );
+      this.libOpenIMSDK.update_conversation_group = this.lib.func(
+        '__stdcall',
+        'update_conversation_group',
+        'void',
+        ['baseCallback *', 'str', 'str']
+      );
+      this.libOpenIMSDK.delete_conversation_group = this.lib.func(
+        '__stdcall',
+        'delete_conversation_group',
+        'void',
+        ['baseCallback *', 'str', 'str']
+      );
+      this.libOpenIMSDK.get_conversation_groups = this.lib.func(
+        '__stdcall',
+        'get_conversation_groups',
+        'void',
+        ['baseCallback *', 'str', 'int']
+      );
+      this.libOpenIMSDK.set_conversation_group_order = this.lib.func(
+        '__stdcall',
+        'set_conversation_group_order',
+        'void',
+        ['baseCallback *', 'str', 'str']
+      );
+      this.libOpenIMSDK.add_conversations_to_groups = this.lib.func(
+        '__stdcall',
+        'add_conversations_to_groups',
+        'void',
+        ['baseCallback *', 'str', 'str', 'str']
+      );
+      this.libOpenIMSDK.remove_conversations_from_groups = this.lib.func(
+        '__stdcall',
+        'remove_conversations_from_groups',
+        'void',
+        ['baseCallback *', 'str', 'str', 'str']
+      );
+      this.libOpenIMSDK.get_conversation_group_by_conversation_id =
+        this.lib.func(
+          '__stdcall',
+          'get_conversation_group_by_conversation_id',
+          'void',
+          ['baseCallback *', 'str', 'str']
+        );
+      this.libOpenIMSDK.get_conversation_group_info_with_conversations =
+        this.lib.func(
+          '__stdcall',
+          'get_conversation_group_info_with_conversations',
+          'void',
+          ['baseCallback *', 'str', 'str']
+        );
+      this.libOpenIMSDK.speech_to_text = this.lib.func(
+        '__stdcall',
+        'speech_to_text',
+        'void',
+        ['baseCallback *', 'str', 'str']
+      );
+      this.libOpenIMSDK.speech_to_text_capabilities = this.lib.func(
+        '__stdcall',
+        'speech_to_text_capabilities',
+        'void',
+        ['baseCallback *', 'str']
+      );
+      this.libOpenIMSDK.set_message_local_content = this.lib.func(
+        '__stdcall',
+        'set_message_local_content',
+        'void',
+        ['baseCallback *', 'str', 'str', 'str']
+      );
     }
   };
 
@@ -1145,6 +1225,9 @@ class OpenIMSDK
     this.libOpenIMSDK.set_custom_business_listener(this.listenerCallback);
     if (this.enterprise || this.basertc) {
       this.libOpenIMSDK.set_signaling_listener(this.listenerCallback);
+    }
+    if (this.enterprise) {
+      this.libOpenIMSDK.set_conversation_group_listener(this.listenerCallback);
     }
   };
 
@@ -1410,6 +1493,15 @@ class OpenIMSDK
   setConversationIsMsgDestruct!: ConversationModuleApi['setConversationIsMsgDestruct'];
   changeInputStates!: ConversationModuleApi['changeInputStates'];
   getInputStates!: ConversationModuleApi['getInputStates'];
+  createConversationGroup!: ConversationModuleApi['createConversationGroup'];
+  updateConversationGroup!: ConversationModuleApi['updateConversationGroup'];
+  deleteConversationGroup!: ConversationModuleApi['deleteConversationGroup'];
+  getConversationGroups!: ConversationModuleApi['getConversationGroups'];
+  setConversationGroupOrder!: ConversationModuleApi['setConversationGroupOrder'];
+  addConversationsToGroups!: ConversationModuleApi['addConversationsToGroups'];
+  removeConversationsFromGroups!: ConversationModuleApi['removeConversationsFromGroups'];
+  getConversationGroupIDsByConversationID!: ConversationModuleApi['getConversationGroupIDsByConversationID'];
+  getConversationGroupInfoWithConversations!: ConversationModuleApi['getConversationGroupInfoWithConversations'];
 
   // implements message api
   createTextMessage!: MessageModuleApi['createTextMessage'];
@@ -1457,6 +1549,9 @@ class OpenIMSDK
   setConversationPinnedMsg!: MessageModuleApi['setConversationPinnedMsg'];
   getConversationPinnedMsg!: MessageModuleApi['getConversationPinnedMsg'];
   createMarkdownMessage!: MessageModuleApi['createMarkdownMessage'];
+  speechToText!: MessageModuleApi['speechToText'];
+  speechToTextCapabilities!: MessageModuleApi['speechToTextCapabilities'];
+  setMessageLocalContent!: MessageModuleApi['setMessageLocalContent'];
 
   // implements signaling api
   signalingInviteInGroup!: SignalingModuleApi['signalingInviteInGroup'];

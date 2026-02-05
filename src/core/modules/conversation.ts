@@ -15,9 +15,23 @@ import {
   SetConversationParams,
   ChangeInputStatesParams,
   GetInputstatesParams,
+  AddConversationsToGroupParams,
+  CreateConversationGroupReq,
+  GetConversationGroupInfoWithConversationsReq,
+  RemoveConversationsFromGroupParams,
+  SetConversationGroupOrderReq,
+  UpdateConversationGroupReq,
 } from '@openim/wasm-client-sdk/lib/types/params';
-import { ConversationItem } from '@openim/wasm-client-sdk/lib/types/entity';
-import { GroupAtType, Platform } from '@openim/wasm-client-sdk';
+import {
+  ConversationGroup,
+  ConversationItem,
+  GetConversationGroupInfoWithConversationsResp,
+} from '@openim/wasm-client-sdk/lib/types/entity';
+import {
+  ConversationGroupType,
+  GroupAtType,
+  Platform,
+} from '@openim/wasm-client-sdk';
 
 export function setupConversationModule(openIMSDK: OpenIMSDK) {
   return {
@@ -261,6 +275,109 @@ export function setupConversationModule(openIMSDK: OpenIMSDK) {
           params.userID
         );
       }),
+    createConversationGroup: (
+      data: CreateConversationGroupReq,
+      opid = uuidV4()
+    ) =>
+      new Promise<BaseResponse<ConversationGroup>>((resolve, reject) => {
+        openIMSDK.libOpenIMSDK.create_conversation_group(
+          openIMSDK.baseCallbackWrap<ConversationGroup>(resolve, reject),
+          opid,
+          JSON.stringify(data)
+        );
+      }),
+    updateConversationGroup: (
+      data: UpdateConversationGroupReq,
+      opid = uuidV4()
+    ) =>
+      new Promise<BaseResponse<ConversationGroup>>((resolve, reject) => {
+        openIMSDK.libOpenIMSDK.update_conversation_group(
+          openIMSDK.baseCallbackWrap<ConversationGroup>(resolve, reject),
+          opid,
+          JSON.stringify(data)
+        );
+      }),
+    deleteConversationGroup: (groupID: string, opid = uuidV4()) =>
+      new Promise<BaseResponse<void>>((resolve, reject) => {
+        openIMSDK.libOpenIMSDK.delete_conversation_group(
+          openIMSDK.baseCallbackWrap<void>(resolve, reject),
+          opid,
+          groupID
+        );
+      }),
+    getConversationGroups: (
+      conversationGroupType: ConversationGroupType,
+      opid = uuidV4()
+    ) =>
+      new Promise<BaseResponse<ConversationGroup[]>>((resolve, reject) => {
+        openIMSDK.libOpenIMSDK.get_conversation_groups(
+          openIMSDK.baseCallbackWrap<ConversationGroup[]>(resolve, reject),
+          opid,
+          conversationGroupType
+        );
+      }),
+    setConversationGroupOrder: (
+      data: SetConversationGroupOrderReq[],
+      opid = uuidV4()
+    ) =>
+      new Promise<BaseResponse<void>>((resolve, reject) => {
+        openIMSDK.libOpenIMSDK.set_conversation_group_order(
+          openIMSDK.baseCallbackWrap<void>(resolve, reject),
+          opid,
+          JSON.stringify(data)
+        );
+      }),
+    addConversationsToGroups: (
+      data: AddConversationsToGroupParams,
+      opid = uuidV4()
+    ) =>
+      new Promise<BaseResponse<void>>((resolve, reject) => {
+        openIMSDK.libOpenIMSDK.add_conversations_to_groups(
+          openIMSDK.baseCallbackWrap<void>(resolve, reject),
+          opid,
+          JSON.stringify(data.conversationIDs),
+          JSON.stringify(data.conversationGroupIDs)
+        );
+      }),
+    removeConversationsFromGroups: (
+      data: RemoveConversationsFromGroupParams,
+      opid = uuidV4()
+    ) =>
+      new Promise<BaseResponse<void>>((resolve, reject) => {
+        openIMSDK.libOpenIMSDK.remove_conversations_from_groups(
+          openIMSDK.baseCallbackWrap<void>(resolve, reject),
+          opid,
+          JSON.stringify(data.conversationIDs),
+          JSON.stringify(data.conversationGroupIDs)
+        );
+      }),
+    getConversationGroupIDsByConversationID: (
+      conversationID: string,
+      opid = uuidV4()
+    ) =>
+      new Promise<BaseResponse<string[]>>((resolve, reject) => {
+        openIMSDK.libOpenIMSDK.get_conversation_group_by_conversation_id(
+          openIMSDK.baseCallbackWrap<string[]>(resolve, reject),
+          opid,
+          conversationID
+        );
+      }),
+    getConversationGroupInfoWithConversations: (
+      data: GetConversationGroupInfoWithConversationsReq,
+      opid = uuidV4()
+    ) =>
+      new Promise<BaseResponse<GetConversationGroupInfoWithConversationsResp>>(
+        (resolve, reject) => {
+          openIMSDK.libOpenIMSDK.get_conversation_group_info_with_conversations(
+            openIMSDK.baseCallbackWrap<GetConversationGroupInfoWithConversationsResp>(
+              resolve,
+              reject
+            ),
+            opid,
+            JSON.stringify(data)
+          );
+        }
+      ),
   };
 }
 
@@ -350,4 +467,40 @@ export interface ConversationModuleApi {
     params: GetInputstatesParams,
     opid?: string
   ) => Promise<BaseResponse<Platform[]>>;
+  createConversationGroup: (
+    data: CreateConversationGroupReq,
+    opid?: string
+  ) => Promise<BaseResponse<ConversationGroup>>;
+  updateConversationGroup: (
+    data: UpdateConversationGroupReq,
+    opid?: string
+  ) => Promise<BaseResponse<ConversationGroup>>;
+  deleteConversationGroup: (
+    groupID: string,
+    opid?: string
+  ) => Promise<BaseResponse<void>>;
+  getConversationGroups: (
+    conversationGroupType: ConversationGroupType,
+    opid?: string
+  ) => Promise<BaseResponse<ConversationGroup[]>>;
+  setConversationGroupOrder: (
+    data: SetConversationGroupOrderReq[],
+    opid?: string
+  ) => Promise<BaseResponse<void>>;
+  addConversationsToGroups: (
+    data: AddConversationsToGroupParams,
+    opid?: string
+  ) => Promise<BaseResponse<void>>;
+  removeConversationsFromGroups: (
+    data: RemoveConversationsFromGroupParams,
+    opid?: string
+  ) => Promise<BaseResponse<void>>;
+  getConversationGroupIDsByConversationID: (
+    conversationID: string,
+    opid?: string
+  ) => Promise<BaseResponse<string[]>>;
+  getConversationGroupInfoWithConversations: (
+    data: GetConversationGroupInfoWithConversationsReq,
+    opid?: string
+  ) => Promise<BaseResponse<GetConversationGroupInfoWithConversationsResp>>;
 }

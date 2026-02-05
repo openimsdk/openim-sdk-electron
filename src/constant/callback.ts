@@ -74,6 +74,11 @@ export enum NativeEvent {
   STREAM_CHANGE,
   RECEIVE_CUSTOM_SIGNAL,
   ON_PROGRESS,
+  CONVERSATION_GROUP_ADDED,
+  CONVERSATION_GROUP_DELETED,
+  CONVERSATION_GROUP_CHANGED,
+  CONVERSATION_GROUP_MEMBER_ADDED,
+  CONVERSATION_GROUP_MEMBER_DELETED,
 }
 
 export const eventMapping: Record<NativeEvent, CbEvents> = {
@@ -160,4 +165,11 @@ export const eventMapping: Record<NativeEvent, CbEvents> = {
   [NativeEvent.DELETE_USER_ALL_MSGS_IN_CONV]:
     CbEvents.OnDeleteUserAllMsgsInConv,
   [NativeEvent.MESSAGE_MODIFIED]: CbEvents.OnMessageModified,
+  [NativeEvent.CONVERSATION_GROUP_ADDED]: CbEvents.OnConversationGroupAdded,
+  [NativeEvent.CONVERSATION_GROUP_DELETED]: CbEvents.OnConversationGroupDeleted,
+  [NativeEvent.CONVERSATION_GROUP_CHANGED]: CbEvents.OnConversationGroupChanged,
+  [NativeEvent.CONVERSATION_GROUP_MEMBER_ADDED]:
+    CbEvents.OnConversationGroupMemberAdded,
+  [NativeEvent.CONVERSATION_GROUP_MEMBER_DELETED]:
+    CbEvents.OnConversationGroupMemberDeleted,
 };

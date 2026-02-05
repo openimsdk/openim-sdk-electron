@@ -734,6 +734,74 @@ declare module 'libOpenIMSDK' {
       operationID: string,
       conversationID: string
     ): void;
+    set_conversation_group_listener(cCallback: CB_S_I_S_S): void;
+    create_conversation_group(
+      cCallback: CB_S_I_S_S,
+      operationID: string,
+      req: string
+    ): void;
+    update_conversation_group(
+      cCallback: CB_S_I_S_S,
+      operationID: string,
+      req: string
+    ): void;
+    delete_conversation_group(
+      cCallback: CB_S_I_S_S,
+      operationID: string,
+      conversationGroupID: string
+    ): void;
+    get_conversation_groups(
+      cCallback: CB_S_I_S_S,
+      operationID: string,
+      type: number
+    ): void;
+    set_conversation_group_order(
+      cCallback: CB_S_I_S_S,
+      operationID: string,
+      req: string
+    ): void;
+    add_conversations_to_groups(
+      cCallback: CB_S_I_S_S,
+      operationID: string,
+      conversationIDs: string,
+      conversationGroupIDs: string
+    ): void;
+    remove_conversations_from_groups(
+      cCallback: CB_S_I_S_S,
+      operationID: string,
+      conversationIDs: string,
+      conversationGroupIDs: string
+    ): void;
+    get_conversation_group_by_conversation_id(
+      cCallback: CB_S_I_S_S,
+      operationID: string,
+      conversationID: string
+    ): void;
+    get_conversation_group_info_with_conversations(
+      cCallback: CB_S_I_S_S,
+      operationID: string,
+      req: string
+    ): void;
+    set_message_local_content(
+      cCallback: CB_S_I_S_S,
+      operationID: string,
+      conversationID: string,
+      message: string
+    ): void;
+    reset_conversation_unread(
+      cCallback: CB_S_I_S_S,
+      operationID: string,
+      req: string
+    ): void;
+    speech_to_text(
+      cCallback: CB_S_I_S_S,
+      operationID: string,
+      req: string
+    ): void;
+    speech_to_text_capabilities(
+      cCallback: CB_S_I_S_S,
+      operationID: string
+    ): void;
   }
   const lib: LibOpenIMSDK;
   export default lib;

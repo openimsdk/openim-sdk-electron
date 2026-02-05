@@ -5,6 +5,7 @@ import {
   MessageItem,
   CardElem,
   AdvancedGetMessageResult,
+  SpeechToTextCapabilities,
 } from '@openim/wasm-client-sdk/lib/types/entity';
 import {
   AtMsgParams,
@@ -33,6 +34,8 @@ import {
   DeleteMessagesParams,
   SetConversationPinnedMsgParams,
   DeleteUserMsgInConvParams,
+  SetMessageLocalContentParams,
+  SpeechToTextParams,
 } from '@openim/wasm-client-sdk/lib/types/params';
 import {
   VideoMsgByPathParams,
@@ -535,6 +538,33 @@ export function setupMessageModule(openIMSDK: OpenIMSDK) {
         opid,
         openIMSDK.libOpenIMSDK.create_markdown_message(opid, content)
       ),
+    speechToText: (params: SpeechToTextParams, opid = uuidV4()) =>
+      new Promise<BaseResponse<{ text: string }>>((resolve, reject) => {
+        openIMSDK.libOpenIMSDK.speech_to_text(
+          openIMSDK.baseCallbackWrap<{ text: string }>(resolve, reject),
+          opid,
+          JSON.stringify(params)
+        );
+      }),
+    speechToTextCapabilities: (opid = uuidV4()) =>
+      new Promise<BaseResponse<SpeechToTextCapabilities>>((resolve, reject) => {
+        openIMSDK.libOpenIMSDK.speech_to_text_capabilities(
+          openIMSDK.baseCallbackWrap<SpeechToTextCapabilities>(resolve, reject),
+          opid
+        );
+      }),
+    setMessageLocalContent: (
+      params: SetMessageLocalContentParams,
+      opid = uuidV4()
+    ) =>
+      new Promise<BaseResponse<void>>((resolve, reject) => {
+        openIMSDK.libOpenIMSDK.set_message_local_content(
+          openIMSDK.baseCallbackWrap<void>(resolve, reject),
+          opid,
+          params.conversationID,
+          JSON.stringify(params.message)
+        );
+      }),
   };
 }
 
@@ -713,4 +743,15 @@ export interface MessageModuleApi {
     content: string,
     opid?: string
   ) => Promise<BaseResponse<MessageItem>>;
+  speechToText: (
+    params: SpeechToTextParams,
+    opid?: string
+  ) => Promise<BaseResponse<{ text: string }>>;
+  speechToTextCapabilities: (
+    opid?: string
+  ) => Promise<BaseResponse<SpeechToTextCapabilities>>;
+  setMessageLocalContent: (
+    params: SetMessageLocalContentParams,
+    opid?: string
+  ) => Promise<BaseResponse<void>>;
 }
