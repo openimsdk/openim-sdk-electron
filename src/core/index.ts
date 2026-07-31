@@ -24,7 +24,6 @@ import { CbEvents, LoginStatus, LogLevel } from '@openim/wasm-client-sdk';
 import { SelfUserInfo } from '@openim/wasm-client-sdk/lib/types/entity';
 import {
   SetConversationExParams,
-  SetConversationParams,
   SetFriendExParams,
   UploadFileParams,
 } from '@openim/wasm-client-sdk/lib/types/params';
@@ -43,6 +42,40 @@ const forceGetDataEvents = [
   CbEvents.OnSyncServerFailed,
   CbEvents.OnSyncServerProgress,
 ];
+
+type CallbackPrototypes = {
+  base: koffi.IKoffiCType;
+  sendMessage: koffi.IKoffiCType;
+  listener: koffi.IKoffiCType;
+};
+
+let callbackPrototypes: CallbackPrototypes | undefined;
+
+const getCallbackPrototypes = (): CallbackPrototypes => {
+  if (!callbackPrototypes) {
+    callbackPrototypes = {
+      base: koffi.proto('__stdcall', 'baseCallback', 'void', [
+        'str',
+        'int',
+        'str',
+        'str',
+      ]),
+      sendMessage: koffi.proto('__stdcall', 'sendMessageCallback', 'void', [
+        'str',
+        'int',
+        'str',
+        'str',
+        'int',
+      ]),
+      listener: koffi.proto('__stdcall', 'listenerCallback', 'void', [
+        'int',
+        'str',
+      ]),
+    };
+  }
+
+  return callbackPrototypes;
+};
 
 class OpenIMSDK
   extends Emitter
@@ -72,24 +105,9 @@ class OpenIMSDK
     this.basertc = basertc;
     this.enterprise = enterprise;
     this.lib = koffi.load(libPath);
-    this.baseCallbackProto = koffi.proto('__stdcall', 'baseCallback', 'void', [
-      'str',
-      'int',
-      'str',
-      'str',
-    ]);
-    this.sendMessageCallbackProto = koffi.proto(
-      '__stdcall',
-      'sendMessageCallback',
-      'void',
-      ['str', 'int', 'str', 'str', 'int']
-    );
-    const listenerCallbackProto = koffi.proto(
-      '__stdcall',
-      'listenerCallback',
-      'void',
-      ['int', 'str']
-    );
+    const callbackTypes = getCallbackPrototypes();
+    this.baseCallbackProto = callbackTypes.base;
+    this.sendMessageCallbackProto = callbackTypes.sendMessage;
     this.listenerCallback = koffi.register(
       (event: NativeEvent, data: string) => {
         const cbEvent = eventMapping[event];
@@ -97,7 +115,7 @@ class OpenIMSDK
         const forceGetData = forceGetDataEvents.includes(cbEvent);
         this.emit(cbEvent, this.generateEventResponse(data, '', forceGetData));
       },
-      koffi.pointer(listenerCallbackProto)
+      koffi.pointer(callbackTypes.listener)
     );
 
     if (emitProxy) {
@@ -809,6 +827,18 @@ class OpenIMSDK
       'void',
       ['baseCallback *', 'str', 'str']
     );
+    this.libOpenIMSDK.get_group_application_badge_count = this.lib.func(
+      '__stdcall',
+      'get_group_application_badge_count',
+      'void',
+      ['baseCallback *', 'str']
+    );
+    this.libOpenIMSDK.clear_group_application_badge_count = this.lib.func(
+      '__stdcall',
+      'clear_group_application_badge_count',
+      'void',
+      ['baseCallback *', 'str']
+    );
     this.libOpenIMSDK.accept_group_application = this.lib.func(
       '__stdcall',
       'accept_group_application',
@@ -1329,6 +1359,8 @@ class OpenIMSDK
   getGroupApplicationListAsRecipient!: GroupModuleApi['getGroupApplicationListAsRecipient'];
   getGroupApplicationListAsApplicant!: GroupModuleApi['getGroupApplicationListAsApplicant'];
   getGroupApplicationUnhandledCount!: GroupModuleApi['getGroupApplicationUnhandledCount'];
+  getGroupApplicationBadgeCount!: GroupModuleApi['getGroupApplicationBadgeCount'];
+  clearGroupApplicationBadgeCount!: GroupModuleApi['clearGroupApplicationBadgeCount'];
   acceptGroupApplication!: GroupModuleApi['acceptGroupApplication'];
   refuseGroupApplication!: GroupModuleApi['refuseGroupApplication'];
   getGroupMemberList!: GroupModuleApi['getGroupMemberList'];

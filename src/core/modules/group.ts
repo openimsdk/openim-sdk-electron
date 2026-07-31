@@ -149,6 +149,22 @@ export function setupGroupModule(openIMSDK: OpenIMSDK) {
         );
       }),
 
+    getGroupApplicationBadgeCount: (opid = uuidV4()) =>
+      new Promise<BaseResponse<number>>((resolve, reject) => {
+        openIMSDK.libOpenIMSDK.get_group_application_badge_count(
+          openIMSDK.baseCallbackWrap<number>(resolve, reject),
+          opid
+        );
+      }),
+
+    clearGroupApplicationBadgeCount: (opid = uuidV4()) =>
+      new Promise<BaseResponse<void>>((resolve, reject) => {
+        openIMSDK.libOpenIMSDK.clear_group_application_badge_count(
+          openIMSDK.baseCallbackWrap<void>(resolve, reject),
+          opid
+        );
+      }),
+
     acceptGroupApplication: (
       params: AccessGroupApplicationParams,
       opid = uuidV4()
@@ -277,7 +293,8 @@ export function setupGroupModule(openIMSDK: OpenIMSDK) {
           openIMSDK.baseCallbackWrap<void>(resolve, reject),
           opid,
           params.groupID,
-          params.isMute ? 1 : 0
+          params.isMute ? 1 : 0,
+          JSON.stringify(params.muteBypassUserIDs ?? [])
         );
       }),
 
@@ -374,6 +391,12 @@ export interface GroupModuleApi {
     params: GetSelfUnhandledApplyCountParams,
     opid?: string
   ) => Promise<BaseResponse<number>>;
+  getGroupApplicationBadgeCount: (
+    opid?: string
+  ) => Promise<BaseResponse<number>>;
+  clearGroupApplicationBadgeCount: (
+    opid?: string
+  ) => Promise<BaseResponse<void>>;
   acceptGroupApplication: (
     params: AccessGroupApplicationParams,
     opid?: string

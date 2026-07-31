@@ -589,6 +589,14 @@ declare module 'libOpenIMSDK' {
       operationID: string,
       param: string
     ): void;
+    get_group_application_badge_count(
+      cCallback: CB_S_I_S_S,
+      operationID: string
+    ): void;
+    clear_group_application_badge_count(
+      cCallback: CB_S_I_S_S,
+      operationID: string
+    ): void;
     accept_group_application(
       cCallback: CB_S_I_S_S,
       operationID: string,
