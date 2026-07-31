@@ -22,6 +22,16 @@ type EmitterEvents = {
   [key in CbEvents]: any;
 };
 
+export type SdkEventLogSource = 'clib-render' | 'wasm-render';
+
+export type SdkEventLogEntry = {
+  event: CbEvents;
+  source: SdkEventLogSource;
+  payload: unknown;
+};
+
+export type SdkEventLogHandler = (entry: SdkEventLogEntry) => void;
+
 type WasmInterface = ReturnType<typeof WasmGetSDK>;
 
 export type IMSDKInterface = Omit<WasmInterface, 'login'> & {
@@ -100,6 +110,8 @@ export type IMSDKInterface = Omit<WasmInterface, 'login'> & {
     params: UploadLogsParams,
     opid?: string
   ) => Promise<WsResponse<unknown>>;
+  getGroupApplicationBadgeCount: (opid?: string) => Promise<WsResponse<number>>;
+  clearGroupApplicationBadgeCount: (opid?: string) => Promise<WsResponse<void>>;
   /**
    * @access only for electron
    */
@@ -138,28 +150,84 @@ type ElectronInvoke = (method: string, ...args: any[]) => Promise<WsResponse>;
 type CreateElectronOptions = {
   wasmConfig?: WasmPathConfig;
   invoke?: ElectronInvoke;
+  onSdkEventLog?: SdkEventLogHandler;
 };
 
 let wasmSDK: IMSDKInterface | undefined;
 let instance: IMSDKInterface | undefined;
 const sdkEmitter = new Emitter();
+let sdkEventLogHandler: SdkEventLogHandler | undefined;
 
 // eslint-disable-next-line
 const methodCache = new WeakMap<Function, any>();
+
+const CB_EVENT_VALUES = new Set<string>(
+  Object.values(CbEvents) as unknown as string[]
+);
+
+type EventPayloadEmitter = {
+  emit: (event: CbEvents, data: unknown) => unknown;
+};
+
+const notifySdkEventLog = (
+  event: CbEvents,
+  data: unknown,
+  source: SdkEventLogSource
+) => {
+  if (!sdkEventLogHandler) {
+    return;
+  }
+
+  try {
+    sdkEventLogHandler({
+      event,
+      source,
+      payload: data,
+    });
+  } catch (error) {
+    console.error('Error invoking onSdkEventLog:', error);
+  }
+};
+
+const wrapWasmEventEmitter = (sdk: IMSDKInterface) => {
+  const emitter = sdk as unknown as EventPayloadEmitter & {
+    __sdkEventLogWrapped__?: boolean;
+  };
+
+  if (emitter.__sdkEventLogWrapped__ || typeof emitter.emit !== 'function') {
+    return;
+  }
+
+  const rawEmit = emitter.emit.bind(emitter);
+  emitter.emit = ((event: CbEvents, data: unknown) => {
+    if (CB_EVENT_VALUES.has(String(event))) {
+      notifySdkEventLog(event, data, 'wasm-render');
+    }
+
+    return rawEmit(event, data);
+  }) as EventPayloadEmitter['emit'];
+  emitter.__sdkEventLogWrapped__ = true;
+};
 
 async function createWasmSDK(wasmConfig?: WasmPathConfig): Promise<void> {
   if (!wasmSDK) {
     const { getSDK } = await import('@openim/wasm-client-sdk');
     wasmSDK = getSDK(wasmConfig) as unknown as IMSDKInterface;
+    wrapWasmEventEmitter(wasmSDK);
   }
 }
 
-export function getWithRenderProcess(
-  { wasmConfig, invoke } = {} as CreateElectronOptions
-) {
+export function getWithRenderProcess(options: CreateElectronOptions = {}) {
+  const { wasmConfig, invoke } = options;
+  if (Object.prototype.hasOwnProperty.call(options, 'onSdkEventLog')) {
+    sdkEventLogHandler = options.onSdkEventLog;
+  }
+
   const interalInvoke = invoke ?? window.openIMRenderApi?.imMethodsInvoke;
-  const subscribeCallback = (event: keyof EmitterEvents, data: any) =>
-    sdkEmitter.emit(event, data);
+  const subscribeCallback = (event: keyof EmitterEvents, data: any) => {
+    notifySdkEventLog(event, data, 'clib-render');
+    return sdkEmitter.emit(event, data);
+  };
 
   if (instance) {
     return {

@@ -68,6 +68,27 @@ const { instance } = getWithRenderProcess();
 export const IMSDK = instance;
 ```
 
+If you need SDK event telemetry in the renderer process, you can pass an
+optional callback to receive the raw event payload and build your own sanitized
+summary:
+
+```typescript
+import { getWithRenderProcess } from '@openim/electron-client-sdk/lib/render';
+
+const { instance } = getWithRenderProcess({
+  onSdkEventLog(entry) {
+    console.info('openim-sdk-event', entry);
+  },
+});
+
+export const IMSDK = instance;
+```
+
+The callback receives the event name, source, and full payload. Do not write the
+payload directly to disk logs; consumers should
+extract only the fields they need and redact message bodies, drafts, tokens, and
+other sensitive values before logging.
+
 ### Logging In and Listening for Connection Status
 
 > Note: You need to [deploy](https://github.com/openimsdk/open-im-server#rocket-quick-start) OpenIM Server first, the default port of OpenIM Server is 10001, 10002.
