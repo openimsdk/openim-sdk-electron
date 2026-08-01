@@ -293,8 +293,7 @@ export function setupGroupModule(openIMSDK: OpenIMSDK) {
           openIMSDK.baseCallbackWrap<void>(resolve, reject),
           opid,
           params.groupID,
-          params.isMute ? 1 : 0,
-          JSON.stringify(params.muteBypassUserIDs ?? [])
+          params.isMute ? 1 : 0
         );
       }),
 
