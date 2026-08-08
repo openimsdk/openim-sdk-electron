@@ -66,7 +66,7 @@
     "semantic-release": "semantic-release",
     "test:contract": "node scripts/check-package-contract.mjs && node scripts/check-native-abi-contract.mjs && node scripts/check-event-contract.mjs",
     "test:consumer": "tsc --noEmit -p test/tsconfig.consumer.json",
-    "test:native-smoke": "electron test/native-smoke.cjs",
+    "test:native-smoke": "electron --no-sandbox test/native-smoke.cjs",
     "test:package": "node scripts/check-packed-package.mjs",
     "test:render-surface": "node test/render-surface.cjs",
     "test:watch": "jest --watch",

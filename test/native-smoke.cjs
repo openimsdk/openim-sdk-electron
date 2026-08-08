@@ -2,8 +2,12 @@ const assert = require('node:assert/strict');
 const path = require('node:path');
 const { app } = require('electron');
 
-const libraryPath = path.resolve(process.argv[2] || '');
-assert(process.argv[2], 'A native OpenIM library path is required');
+const libraryArgument = process.argv[process.argv.length - 1];
+assert(
+  libraryArgument && path.resolve(libraryArgument) !== __filename,
+  'A native OpenIM library path is required'
+);
+const libraryPath = path.resolve(libraryArgument);
 
 app
   .whenReady()
