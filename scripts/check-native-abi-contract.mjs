@@ -48,6 +48,7 @@ function normalizeCType(type) {
   const aliases = {
     'char *': 'str',
     'char*': 'str',
+    'long long int': 'long long',
     CB_S_I_S_S: 'NativeBaseCallback',
     CB_I_S: 'NativeEventListenerCallback',
     CB_S_I_S_S_I: 'NativeSendMessageCallback',
