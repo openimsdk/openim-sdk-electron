@@ -136,6 +136,15 @@ jobs:
           fetch-depth: 1
           persist-credentials: false
 
+      - name: Check out matching C++ SDK contracts
+        uses: actions/checkout@v4
+        with:
+          repository: OpenIMSDK/openim-sdk-cpp
+          ref: ${{ needs.resolve.outputs.cpp_ref }}
+          path: .ci/cpp
+          fetch-depth: 1
+          persist-credentials: false
+
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
@@ -181,6 +190,7 @@ jobs:
       - name: Verify source and ABI contracts
         env:
           OPENIM_NATIVE_HEADER: native-artifacts/openim-native-linux_x64/libopenimsdk.h
+          OPENIM_CPP_CONSTANT: .ci/cpp/go/constant.go
         run: npm run verify
 
       - name: Build package
