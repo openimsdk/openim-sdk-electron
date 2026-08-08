@@ -18,6 +18,25 @@ For the SDK reference, see [https://docs.openim.io/sdks/quickstart/electron](htt
 npm install @openim/wasm-client-sdk @openim/electron-client-sdk --save
 ```
 
+The package contains CI-built native libraries for `mac_arm64`, `mac_x64`,
+`linux_arm64`, `linux_x64`, and `win_x64` under its `assets` directory. The
+native library version is checked against the expected SDK Core version at
+startup.
+
+## Release process
+
+Electron releases are published only by the GitHub Actions release workflow
+after a matching `v*` tag is pushed. Before pushing the Electron tag:
+
+1. Publish the matching `@openim/wasm-client-sdk` version and push its matching
+   Git tag.
+2. Ensure the `openim-sdk-cpp` `v3.8.3-patch.15` tag contains the reusable
+   five-platform native build workflow and the required C ABI exports.
+3. Push an Electron tag that exactly matches the version in `package.json`.
+
+Manual workflow runs build and verify the release inputs but never publish to
+npm.
+
 ### Obtaining Required Static Resources for WASM
 
 Follow these steps to obtain the static resources required for WebAssembly (WASM):
@@ -42,30 +61,31 @@ The following examples demonstrate how to use the SDK. TypeScript is used, provi
 
 ### Importing the SDK
 
-## In main process
+### In main process
 
 ```typescript
-import OpenIMSDKMain from '@openim/electron-client-sdk';
+import OpenIMSdkMain from '@openim/electron-client-sdk';
 
-...
-new OpenIMSDKMain(libPath, mainWindow.webContents);
-...
+const sdk = new OpenIMSdkMain(libPath, mainWindow.webContents);
+
+// Call this when the application tears the SDK down.
+sdk.dispose();
 ```
 
-## In preload script
+### In preload script
 
 ```typescript
-import '@openim/electron-client-sdk/lib/preload';
+import '@openim/electron-client-sdk/preload';
 ```
 
-## In renderer process
+### In renderer process
 
 ```typescript
-import { getWithRenderProcess } from '@openim/electron-client-sdk/lib/render';
+import { getWithRenderProcess } from '@openim/electron-client-sdk/render';
 
 const { instance } = getWithRenderProcess();
 
-export const IMSDK = instance;
+export const imSdk = instance;
 ```
 
 If you need SDK event telemetry in the renderer process, you can pass an
@@ -73,7 +93,7 @@ optional callback to receive the raw event payload and build your own sanitized
 summary:
 
 ```typescript
-import { getWithRenderProcess } from '@openim/electron-client-sdk/lib/render';
+import { getWithRenderProcess } from '@openim/electron-client-sdk/render';
 
 const { instance } = getWithRenderProcess({
   onSdkEventLog(entry) {
@@ -81,7 +101,7 @@ const { instance } = getWithRenderProcess({
   },
 });
 
-export const IMSDK = instance;
+export const imSdk = instance;
 ```
 
 The callback receives the event name, source, and full payload. Do not write the
@@ -94,16 +114,20 @@ other sensitive values before logging.
 > Note: You need to [deploy](https://github.com/openimsdk/open-im-server#rocket-quick-start) OpenIM Server first, the default port of OpenIM Server is 10001, 10002.
 
 ```typescript
-import { CbEvents, LogLevel } from '@openim/wasm-client-sdk';
-import type { WSEvent } from '@openim/wasm-client-sdk/lib/types/entity';
+import {
+  LogLevel,
+  Platform,
+  SdkEvent,
+  type SdkResponse,
+} from '@openim/wasm-client-sdk';
 
-IMSDK.on(CbEvents.OnConnecting, handleConnecting);
-IMSDK.on(CbEvents.OnConnectFailed, handleConnectFailed);
-IMSDK.on(CbEvents.OnConnectSuccess, handleConnectSuccess);
+imSdk.on(SdkEvent.OnConnecting, handleConnecting);
+imSdk.on(SdkEvent.OnConnectFailed, handleConnectFailed);
+imSdk.on(SdkEvent.OnConnectSuccess, handleConnectSuccess);
 
 // electron
-await IMSDK.initSDK({
-  platformID: 'your-platform-id',
+await imSdk.initSDK({
+  platformID: Platform.Windows,
   apiAddr: 'http://your-server-ip:10002',
   wsAddr: 'ws://your-server-ip:10001',
   dataDir: 'your-db-dir',
@@ -112,13 +136,13 @@ await IMSDK.initSDK({
   isLogStandardOutput: true,
 });
 
-await IMSDK.login({
+await imSdk.login({
   userID: 'your-user-id',
   token: 'your-token',
 });
 
 // web
-await IMSDK.login({
+await imSdk.login({
   userID: 'your-user-id',
   token: 'your-token',
   platformID: 5,
@@ -131,7 +155,7 @@ function handleConnecting() {
   // Connecting...
 }
 
-function handleConnectFailed({ errCode, errMsg }: WSEvent) {
+function handleConnectFailed({ errCode, errMsg }: SdkResponse) {
   // Connection failed ❌
   console.log(errCode, errMsg);
 }
@@ -148,22 +172,23 @@ To log into the IM server, you need to create an account and obtain a user ID an
 OpenIM makes it easy to send and receive messages. By default, there is no restriction on having a friend relationship to send messages (although you can configure other policies on the server). If you know the user ID of the recipient, you can conveniently send a message to them.
 
 ```typescript
-import { CbEvents } from '@openim/wasm-client-sdk';
-import type {
-  WSEvent,
-  MessageItem,
-} from '@openim/wasm-client-sdk/lib/types/entity';
+import {
+  SdkEvent,
+  type MessageItem,
+  type SdkResponse,
+} from '@openim/wasm-client-sdk';
 
 // Listenfor new messages 📩
-IMSDK.on(CbEvents.OnRecvNewMessages, handleNewMessages);
+imSdk.on(SdkEvent.OnRecvNewMessages, handleNewMessages);
 
-const message = (await IMSDK.createTextMessage('hello openim')).data;
+const message = (await imSdk.createTextMessage('hello openim')).data;
 
-IMSDK.sendMessage({
-  recvID: 'recv user id',
-  groupID: '',
-  message,
-})
+imSdk
+  .sendMessage({
+    recvID: 'recv user id',
+    groupID: '',
+    message,
+  })
   .then(() => {
     // Message sent successfully ✉️
   })
@@ -172,7 +197,7 @@ IMSDK.sendMessage({
     console.log(err);
   });
 
-function handleNewMessages({ data }: WSEvent<MessageItem[]>) {
+function handleNewMessages({ data }: SdkResponse<MessageItem[]>) {
   // New message list 📨
   console.log(data);
 }
@@ -203,4 +228,4 @@ Check out our [user case studies](https://github.com/OpenIMSDK/community/blob/ma
 
 ## License :page_facing_up:
 
-OpenIM is licensed under the Apache 2.0 license. See [LICENSE](https://github.com/openimsdk/open-im-server/tree/main/LICENSE) for the full license text.
+OpenIM SDK Electron is licensed under AGPL-3.0-only. See [LICENSE](./LICENSE) for the full license text.

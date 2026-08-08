@@ -1,46 +1,44 @@
 import koffi from 'koffi';
-import { v4 as uuidV4 } from 'uuid';
-import type { LibOpenIMSDK } from 'libOpenIMSDK';
+import { uuidV4 } from '@/utils/uuid';
+import type { NativeOpenIMSdk } from '@/types/nativeSdk';
 import { UserModuleApi, setupUserModule } from './modules/user';
 import {
-  DebugLogsParams,
-  ErrorLogsParams,
   InitConfig,
-  LoginParams,
+  LogErrorParams,
+  LogMessageParams,
+  NativeLoginParams,
   UploadLogsParams,
 } from '@/types/params';
-import { BaseResponse, EmitProxy } from '@/types/entity';
+import { SdkResponse, SdkEventEmitter } from '@/types/entity';
 import { ErrorCode } from '@/constant/api';
 import { NativeEvent, eventMapping } from '@/constant/callback';
 import Emitter from '@/utils/emitter';
-import { type FriendModuleApi, setupFriendModule } from './modules/friend';
-import { type GroupModuleApi, setupGroupModule } from './modules/group';
+import { setupFriendModule } from './modules/friend';
+import type { FriendModuleApi } from './modules/friend';
+import { setupGroupModule } from './modules/group';
+import type { GroupModuleApi } from './modules/group';
+import { setupConversationModule } from './modules/conversation';
+import type { ConversationModuleApi } from './modules/conversation';
+import { setupMessageModule } from './modules/message';
+import type { MessageModuleApi } from './modules/message';
 import {
-  type ConversationModuleApi,
-  setupConversationModule,
-} from './modules/conversation';
-import { type MessageModuleApi, setupMessageModule } from './modules/message';
-import { CbEvents, LoginStatus, LogLevel } from '@openim/wasm-client-sdk';
-import { SelfUserInfo } from '@openim/wasm-client-sdk/lib/types/entity';
-import {
-  SetConversationExParams,
-  SetFriendExParams,
+  SdkEvent,
+  LoginStatus,
+  LogLevel,
   UploadFileParams,
-} from '@openim/wasm-client-sdk/lib/types/params';
-import {
-  type SignalingModuleApi,
-  setupSignalingModule,
-} from './modules/signaling';
+} from '@openim/wasm-client-sdk';
 
-function isObject(value: unknown) {
+const EXPECTED_NATIVE_SDK_VERSION = 'v3.8.3-patch.15';
+
+function isRecord(value: unknown): value is Record<string, unknown> {
   return Object.prototype.toString.call(value) === '[object Object]';
 }
 
 const forceGetDataEvents = [
-  CbEvents.OnSyncServerStart,
-  CbEvents.OnSyncServerFinish,
-  CbEvents.OnSyncServerFailed,
-  CbEvents.OnSyncServerProgress,
+  SdkEvent.OnSyncServerStart,
+  SdkEvent.OnSyncServerFinish,
+  SdkEvent.OnSyncServerFailed,
+  SdkEvent.OnSyncServerProgress,
 ];
 
 type CallbackPrototypes = {
@@ -77,34 +75,45 @@ const getCallbackPrototypes = (): CallbackPrototypes => {
   return callbackPrototypes;
 };
 
-class OpenIMSDK
+class OpenIMSdk
   extends Emitter
   implements
     UserModuleApi,
     FriendModuleApi,
     GroupModuleApi,
     ConversationModuleApi,
-    MessageModuleApi,
-    SignalingModuleApi
+    MessageModuleApi
 {
-  libOpenIMSDK = {} as LibOpenIMSDK;
+  nativeSdk = {} as NativeOpenIMSdk;
   baseCallbackProto: koffi.IKoffiCType;
   sendMessageCallbackProto: koffi.IKoffiCType;
   listenerCallback: koffi.IKoffiRegisteredCallback;
   lib: koffi.IKoffiLib;
-  enterprise: boolean;
-  basertc: boolean;
+  nativeSdkVersion: string;
 
-  constructor(
-    libPath: string,
-    emitProxy?: EmitProxy,
-    enterprise = false,
-    basertc = false
-  ) {
+  constructor(libPath: string, emitProxy?: SdkEventEmitter) {
     super();
-    this.basertc = basertc;
-    this.enterprise = enterprise;
     this.lib = koffi.load(libPath);
+    try {
+      this.nativeSdk.get_sdk_version = this.lib.func(
+        '__stdcall',
+        'get_sdk_version',
+        'str',
+        []
+      );
+      this.nativeSdkVersion = this.nativeSdk.get_sdk_version();
+    } catch (error) {
+      throw new Error(
+        `The native OpenIM library does not expose get_sdk_version and is not compatible with Electron SDK ${EXPECTED_NATIVE_SDK_VERSION}: ${String(
+          error
+        )}`
+      );
+    }
+    if (this.nativeSdkVersion !== EXPECTED_NATIVE_SDK_VERSION) {
+      throw new Error(
+        `Incompatible native OpenIM SDK version ${this.nativeSdkVersion}; expected ${EXPECTED_NATIVE_SDK_VERSION}`
+      );
+    }
     const callbackTypes = getCallbackPrototypes();
     this.baseCallbackProto = callbackTypes.base;
     this.sendMessageCallbackProto = callbackTypes.sendMessage;
@@ -113,7 +122,10 @@ class OpenIMSDK
         const cbEvent = eventMapping[event];
         if (!cbEvent) return;
         const forceGetData = forceGetDataEvents.includes(cbEvent);
-        this.emit(cbEvent, this.generateEventResponse(data, '', forceGetData));
+        this.emit(
+          cbEvent,
+          this.generateEventResponse(cbEvent, data, '', forceGetData)
+        );
       },
       koffi.pointer(callbackTypes.listener)
     );
@@ -130,647 +142,639 @@ class OpenIMSDK
     Object.assign(this, setupGroupModule(this));
     Object.assign(this, setupConversationModule(this));
     Object.assign(this, setupMessageModule(this));
-    Object.assign(this, setupSignalingModule(this));
   }
 
   registerFunc = () => {
-    this.libOpenIMSDK.set_group_listener = this.lib.func(
+    this.nativeSdk.set_group_listener = this.lib.func(
       '__stdcall',
       'set_group_listener',
       'void',
       ['listenerCallback *']
     );
-    this.libOpenIMSDK.set_conversation_listener = this.lib.func(
+    this.nativeSdk.set_conversation_listener = this.lib.func(
       '__stdcall',
       'set_conversation_listener',
       'void',
       ['listenerCallback *']
     );
-    this.libOpenIMSDK.set_advanced_msg_listener = this.lib.func(
+    this.nativeSdk.set_advanced_msg_listener = this.lib.func(
       '__stdcall',
       'set_advanced_msg_listener',
       'void',
       ['listenerCallback *']
     );
-    this.libOpenIMSDK.set_batch_msg_listener = this.lib.func(
+    this.nativeSdk.set_batch_msg_listener = this.lib.func(
       '__stdcall',
       'set_batch_msg_listener',
       'void',
       ['listenerCallback *']
     );
-    this.libOpenIMSDK.set_user_listener = this.lib.func(
+    this.nativeSdk.set_user_listener = this.lib.func(
       '__stdcall',
       'set_user_listener',
       'void',
       ['listenerCallback *']
     );
-    this.libOpenIMSDK.set_friend_listener = this.lib.func(
+    this.nativeSdk.set_friend_listener = this.lib.func(
       '__stdcall',
       'set_friend_listener',
       'void',
       ['listenerCallback *']
     );
-    this.libOpenIMSDK.set_custom_business_listener = this.lib.func(
+    this.nativeSdk.set_custom_business_listener = this.lib.func(
       '__stdcall',
       'set_custom_business_listener',
       'void',
       ['listenerCallback *']
     );
-    this.libOpenIMSDK.init_sdk = this.lib.func(
-      '__stdcall',
-      'init_sdk',
-      'uint8',
-      ['listenerCallback *', 'str', 'str']
-    );
-    this.libOpenIMSDK.un_init_sdk = this.lib.func(
+    this.nativeSdk.init_sdk = this.lib.func('__stdcall', 'init_sdk', 'uint8', [
+      'listenerCallback *',
+      'str',
+      'str',
+    ]);
+    this.nativeSdk.un_init_sdk = this.lib.func(
       '__stdcall',
       'un_init_sdk',
       'void',
       ['str']
     );
-    this.libOpenIMSDK.login = this.lib.func('__stdcall', 'login', 'void', [
+    this.nativeSdk.login = this.lib.func('__stdcall', 'login', 'void', [
       'baseCallback *',
       'str',
       'str',
       'str',
     ]);
-    this.libOpenIMSDK.logout = this.lib.func('__stdcall', 'logout', 'void', [
+    this.nativeSdk.logout = this.lib.func('__stdcall', 'logout', 'void', [
       'baseCallback *',
       'str',
     ]);
-    this.libOpenIMSDK.set_app_background_status = this.lib.func(
+    this.nativeSdk.set_app_background_status = this.lib.func(
       '__stdcall',
       'set_app_background_status',
       'void',
       ['baseCallback *', 'str', 'int']
     );
-    this.libOpenIMSDK.network_status_changed = this.lib.func(
+    this.nativeSdk.network_status_changed = this.lib.func(
       '__stdcall',
       'network_status_changed',
       'void',
       ['baseCallback *', 'str']
     );
-    this.libOpenIMSDK.get_login_status = this.lib.func(
+    this.nativeSdk.get_login_status = this.lib.func(
       '__stdcall',
       'get_login_status',
-      'int',
+      'long long',
       ['str']
     );
-    this.libOpenIMSDK.get_login_user = this.lib.func(
-      '__stdcall',
-      'get_login_user',
-      'str',
-      []
-    );
-    this.libOpenIMSDK.create_text_message = this.lib.func(
+    this.nativeSdk.create_text_message = this.lib.func(
       '__stdcall',
       'create_text_message',
       'str',
       ['str', 'str']
     );
-    this.libOpenIMSDK.create_advanced_text_message = this.lib.func(
+    this.nativeSdk.create_advanced_text_message = this.lib.func(
       '__stdcall',
       'create_advanced_text_message',
       'str',
       ['str', 'str', 'str']
     );
-    this.libOpenIMSDK.create_text_at_message = this.lib.func(
+    this.nativeSdk.create_text_at_message = this.lib.func(
       '__stdcall',
       'create_text_at_message',
       'str',
       ['str', 'str', 'str', 'str', 'str']
     );
-    this.libOpenIMSDK.create_location_message = this.lib.func(
+    this.nativeSdk.create_location_message = this.lib.func(
       '__stdcall',
       'create_location_message',
       'str',
       ['str', 'str', 'double', 'double']
     );
-    this.libOpenIMSDK.create_custom_message = this.lib.func(
+    this.nativeSdk.create_custom_message = this.lib.func(
       '__stdcall',
       'create_custom_message',
       'str',
       ['str', 'str', 'str', 'str']
     );
-    this.libOpenIMSDK.create_quote_message = this.lib.func(
+    this.nativeSdk.create_quote_message = this.lib.func(
       '__stdcall',
       'create_quote_message',
       'str',
       ['str', 'str', 'str']
     );
-    this.libOpenIMSDK.create_advanced_quote_message = this.lib.func(
+    this.nativeSdk.create_advanced_quote_message = this.lib.func(
       '__stdcall',
       'create_advanced_quote_message',
       'str',
       ['str', 'str', 'str', 'str']
     );
-    this.libOpenIMSDK.create_card_message = this.lib.func(
+    this.nativeSdk.create_card_message = this.lib.func(
       '__stdcall',
       'create_card_message',
       'str',
       ['str', 'str']
     );
-    this.libOpenIMSDK.create_video_message_from_full_path = this.lib.func(
+    this.nativeSdk.create_video_message_from_full_path = this.lib.func(
       '__stdcall',
       'create_video_message_from_full_path',
       'str',
       ['str', 'str', 'str', 'long long', 'str']
     );
-    this.libOpenIMSDK.create_image_message_from_full_path = this.lib.func(
+    this.nativeSdk.create_image_message_from_full_path = this.lib.func(
       '__stdcall',
       'create_image_message_from_full_path',
       'str',
       ['str', 'str']
     );
-    this.libOpenIMSDK.create_sound_message_from_full_path = this.lib.func(
+    this.nativeSdk.create_sound_message_from_full_path = this.lib.func(
       '__stdcall',
       'create_sound_message_from_full_path',
       'str',
       ['str', 'str', 'long long']
     );
-    this.libOpenIMSDK.create_file_message_from_full_path = this.lib.func(
+    this.nativeSdk.create_file_message_from_full_path = this.lib.func(
       '__stdcall',
       'create_file_message_from_full_path',
       'str',
       ['str', 'str', 'str']
     );
-    this.libOpenIMSDK.create_image_message = this.lib.func(
+    this.nativeSdk.create_image_message = this.lib.func(
       '__stdcall',
       'create_image_message',
       'str',
       ['str', 'str']
     );
-    this.libOpenIMSDK.create_image_message_by_url = this.lib.func(
+    this.nativeSdk.create_image_message_by_url = this.lib.func(
       '__stdcall',
       'create_image_message_by_url',
       'str',
       ['str', 'str', 'str', 'str', 'str']
     );
-    this.libOpenIMSDK.create_sound_message_by_url = this.lib.func(
+    this.nativeSdk.create_sound_message_by_url = this.lib.func(
       '__stdcall',
       'create_sound_message_by_url',
       'str',
       ['str', 'str']
     );
-    this.libOpenIMSDK.create_sound_message = this.lib.func(
+    this.nativeSdk.create_sound_message = this.lib.func(
       '__stdcall',
       'create_sound_message',
       'str',
       ['str', 'str', 'long long']
     );
-    this.libOpenIMSDK.create_video_message_by_url = this.lib.func(
+    this.nativeSdk.create_video_message_by_url = this.lib.func(
       '__stdcall',
       'create_video_message_by_url',
       'str',
       ['str', 'str']
     );
-    this.libOpenIMSDK.create_video_message = this.lib.func(
+    this.nativeSdk.create_video_message = this.lib.func(
       '__stdcall',
       'create_video_message',
       'str',
       ['str', 'str', 'str', 'long long', 'str']
     );
-    this.libOpenIMSDK.create_file_message_by_url = this.lib.func(
+    this.nativeSdk.create_file_message_by_url = this.lib.func(
       '__stdcall',
       'create_file_message_by_url',
       'str',
       ['str', 'str']
     );
-    this.libOpenIMSDK.create_file_message = this.lib.func(
+    this.nativeSdk.create_file_message = this.lib.func(
       '__stdcall',
       'create_file_message',
       'str',
       ['str', 'str', 'str']
     );
-    this.libOpenIMSDK.create_merger_message = this.lib.func(
+    this.nativeSdk.create_merger_message = this.lib.func(
       '__stdcall',
       'create_merger_message',
       'str',
       ['str', 'str', 'str', 'str']
     );
-    this.libOpenIMSDK.create_face_message = this.lib.func(
+    this.nativeSdk.create_face_message = this.lib.func(
       '__stdcall',
       'create_face_message',
       'str',
       ['str', 'int', 'str']
     );
-    this.libOpenIMSDK.create_forward_message = this.lib.func(
+    this.nativeSdk.create_forward_message = this.lib.func(
       '__stdcall',
       'create_forward_message',
       'str',
       ['str', 'str']
     );
-    this.libOpenIMSDK.get_all_conversation_list = this.lib.func(
+    this.nativeSdk.get_all_conversation_list = this.lib.func(
       '__stdcall',
       'get_all_conversation_list',
       'void',
       ['baseCallback *', 'str']
     );
-    this.libOpenIMSDK.get_conversation_list_split = this.lib.func(
+    this.nativeSdk.get_conversation_list_split = this.lib.func(
       '__stdcall',
       'get_conversation_list_split',
       'void',
       ['baseCallback *', 'str', 'int', 'int']
     );
-    this.libOpenIMSDK.get_one_conversation = this.lib.func(
+    this.nativeSdk.get_one_conversation = this.lib.func(
       '__stdcall',
       'get_one_conversation',
       'void',
       ['baseCallback *', 'str', 'int', 'str']
     );
-    this.libOpenIMSDK.get_multiple_conversation = this.lib.func(
+    this.nativeSdk.get_multiple_conversation = this.lib.func(
       '__stdcall',
       'get_multiple_conversation',
       'void',
       ['baseCallback *', 'str', 'str']
     );
-    this.libOpenIMSDK.hide_conversation = this.lib.func(
+    this.nativeSdk.search_conversation = this.lib.func(
+      '__stdcall',
+      'search_conversation',
+      'void',
+      ['baseCallback *', 'str', 'str']
+    );
+    this.nativeSdk.hide_conversation = this.lib.func(
       '__stdcall',
       'hide_conversation',
       'void',
       ['baseCallback *', 'str', 'str']
     );
-    this.libOpenIMSDK.set_conversation_draft = this.lib.func(
+    this.nativeSdk.set_conversation_draft = this.lib.func(
       '__stdcall',
       'set_conversation_draft',
       'void',
       ['baseCallback *', 'str', 'str', 'str']
     );
-    this.libOpenIMSDK.set_conversation = this.lib.func(
+    this.nativeSdk.set_conversation = this.lib.func(
       '__stdcall',
       'set_conversation',
       'void',
       ['baseCallback *', 'str', 'str', 'str']
     );
-    this.libOpenIMSDK.get_total_unread_msg_count = this.lib.func(
+    this.nativeSdk.get_total_unread_msg_count = this.lib.func(
       '__stdcall',
       'get_total_unread_msg_count',
       'void',
       ['baseCallback *', 'str']
     );
-    this.libOpenIMSDK.get_at_all_tag = this.lib.func(
+    this.nativeSdk.get_at_all_tag = this.lib.func(
       '__stdcall',
       'get_at_all_tag',
       'str',
       ['str']
     );
-    this.libOpenIMSDK.get_conversation_id_by_session_type = this.lib.func(
-      '__stdcall',
-      'get_conversation_id_by_session_type',
-      'str',
-      ['str', 'str', 'int']
-    );
-    this.libOpenIMSDK.send_message = this.lib.func(
+    this.nativeSdk.send_message = this.lib.func(
       '__stdcall',
       'send_message',
       'void',
       ['sendMessageCallback *', 'str', 'str', 'str', 'str', 'str', 'int']
     );
-    this.libOpenIMSDK.send_message_not_oss = this.lib.func(
+    this.nativeSdk.send_message_not_oss = this.lib.func(
       '__stdcall',
       'send_message_not_oss',
       'void',
       ['sendMessageCallback *', 'str', 'str', 'str', 'str', 'str', 'int']
     );
-    this.libOpenIMSDK.find_message_list = this.lib.func(
+    this.nativeSdk.find_message_list = this.lib.func(
       '__stdcall',
       'find_message_list',
       'void',
       ['baseCallback *', 'str', 'str']
     );
-    this.libOpenIMSDK.get_advanced_history_message_list = this.lib.func(
+    this.nativeSdk.get_advanced_history_message_list = this.lib.func(
       '__stdcall',
       'get_advanced_history_message_list',
       'void',
       ['baseCallback *', 'str', 'str']
     );
-    this.libOpenIMSDK.get_advanced_history_message_list_reverse = this.lib.func(
+    this.nativeSdk.get_advanced_history_message_list_reverse = this.lib.func(
       '__stdcall',
       'get_advanced_history_message_list_reverse',
       'void',
       ['baseCallback *', 'str', 'str']
     );
-    this.libOpenIMSDK.revoke_message = this.lib.func(
+    this.nativeSdk.revoke_message = this.lib.func(
       '__stdcall',
       'revoke_message',
       'void',
       ['baseCallback *', 'str', 'str', 'str']
     );
-    this.libOpenIMSDK.typing_status_update = this.lib.func(
-      '__stdcall',
-      'typing_status_update',
-      'void',
-      ['baseCallback *', 'str', 'str', 'str']
-    );
-    this.libOpenIMSDK.mark_conversation_message_as_read = this.lib.func(
+    this.nativeSdk.mark_conversation_message_as_read = this.lib.func(
       '__stdcall',
       'mark_conversation_message_as_read',
       'void',
       ['baseCallback *', 'str', 'str']
     );
-    this.libOpenIMSDK.delete_message_from_local_storage = this.lib.func(
+    this.nativeSdk.mark_all_conversation_message_as_read = this.lib.func(
+      '__stdcall',
+      'mark_all_conversation_message_as_read',
+      'void',
+      ['baseCallback *', 'str']
+    );
+    this.nativeSdk.delete_message_from_local_storage = this.lib.func(
       '__stdcall',
       'delete_message_from_local_storage',
       'void',
       ['baseCallback *', 'str', 'str', 'str']
     );
-    this.libOpenIMSDK.delete_message = this.lib.func(
+    this.nativeSdk.delete_message = this.lib.func(
       '__stdcall',
       'delete_message',
       'void',
       ['baseCallback *', 'str', 'str', 'str']
     );
-    this.libOpenIMSDK.change_input_states = this.lib.func(
+    this.nativeSdk.change_input_states = this.lib.func(
       '__stdcall',
       'change_input_states',
       'void',
       ['baseCallback *', 'str', 'str', 'int']
     );
-    this.libOpenIMSDK.get_input_states = this.lib.func(
+    this.nativeSdk.get_input_states = this.lib.func(
       '__stdcall',
       'get_input_states',
       'void',
       ['baseCallback *', 'str', 'str', 'str']
     );
-    this.libOpenIMSDK.hide_all_conversations = this.lib.func(
+    this.nativeSdk.hide_all_conversations = this.lib.func(
       '__stdcall',
       'hide_all_conversations',
       'void',
       ['baseCallback *', 'str']
     );
-    this.libOpenIMSDK.delete_all_msg_from_local_and_svr = this.lib.func(
+    this.nativeSdk.delete_all_msg_from_local_and_svr = this.lib.func(
       '__stdcall',
       'delete_all_msg_from_local_and_svr',
       'void',
       ['baseCallback *', 'str']
     );
-    this.libOpenIMSDK.delete_all_msg_from_local = this.lib.func(
+    this.nativeSdk.delete_all_msg_from_local = this.lib.func(
       '__stdcall',
       'delete_all_msg_from_local',
       'void',
       ['baseCallback *', 'str']
     );
-    this.libOpenIMSDK.clear_conversation_and_delete_all_msg = this.lib.func(
+    this.nativeSdk.clear_conversation_and_delete_all_msg = this.lib.func(
       '__stdcall',
       'clear_conversation_and_delete_all_msg',
       'void',
       ['baseCallback *', 'str', 'str']
     );
-    this.libOpenIMSDK.delete_conversation_and_delete_all_msg = this.lib.func(
+    this.nativeSdk.delete_conversation_and_delete_all_msg = this.lib.func(
       '__stdcall',
       'delete_conversation_and_delete_all_msg',
       'void',
       ['baseCallback *', 'str', 'str']
     );
-    this.libOpenIMSDK.insert_single_message_to_local_storage = this.lib.func(
+    this.nativeSdk.insert_single_message_to_local_storage = this.lib.func(
       '__stdcall',
       'insert_single_message_to_local_storage',
       'void',
       ['baseCallback *', 'str', 'str', 'str', 'str']
     );
-    this.libOpenIMSDK.insert_group_message_to_local_storage = this.lib.func(
+    this.nativeSdk.insert_group_message_to_local_storage = this.lib.func(
       '__stdcall',
       'insert_group_message_to_local_storage',
       'void',
       ['baseCallback *', 'str', 'str', 'str', 'str']
     );
-    this.libOpenIMSDK.search_local_messages = this.lib.func(
+    this.nativeSdk.search_local_messages = this.lib.func(
       '__stdcall',
       'search_local_messages',
       'void',
       ['baseCallback *', 'str', 'str']
     );
-    this.libOpenIMSDK.set_message_local_ex = this.lib.func(
+    this.nativeSdk.set_message_local_ex = this.lib.func(
       '__stdcall',
       'set_message_local_ex',
       'void',
       ['baseCallback *', 'str', 'str', 'str', 'str']
     );
-    this.libOpenIMSDK.get_users_info = this.lib.func(
+    this.nativeSdk.get_users_info = this.lib.func(
       '__stdcall',
       'get_users_info',
       'void',
       ['baseCallback *', 'str', 'str']
     );
-    this.libOpenIMSDK.set_self_info = this.lib.func(
+    this.nativeSdk.set_self_info = this.lib.func(
       '__stdcall',
       'set_self_info',
       'void',
       ['baseCallback *', 'str', 'str']
     );
-    this.libOpenIMSDK.get_self_user_info = this.lib.func(
+    this.nativeSdk.get_self_user_info = this.lib.func(
       '__stdcall',
       'get_self_user_info',
       'void',
       ['baseCallback *', 'str']
     );
-    this.libOpenIMSDK.subscribe_users_status = this.lib.func(
+    this.nativeSdk.subscribe_users_status = this.lib.func(
       '__stdcall',
       'subscribe_users_status',
       'void',
       ['baseCallback *', 'str', 'str']
     );
-    this.libOpenIMSDK.unsubscribe_users_status = this.lib.func(
+    this.nativeSdk.unsubscribe_users_status = this.lib.func(
       '__stdcall',
       'unsubscribe_users_status',
       'void',
       ['baseCallback *', 'str', 'str']
     );
-    this.libOpenIMSDK.get_subscribe_users_status = this.lib.func(
+    this.nativeSdk.get_subscribe_users_status = this.lib.func(
       '__stdcall',
       'get_subscribe_users_status',
       'void',
       ['baseCallback *', 'str']
     );
-    this.libOpenIMSDK.get_user_status = this.lib.func(
+    this.nativeSdk.get_user_status = this.lib.func(
       '__stdcall',
       'get_user_status',
       'void',
       ['baseCallback *', 'str', 'str']
     );
     // Friend functions
-    this.libOpenIMSDK.update_friends = this.lib.func(
+    this.nativeSdk.update_friends = this.lib.func(
       '__stdcall',
       'update_friends',
       'void',
       ['baseCallback *', 'str', 'str']
     );
-    this.libOpenIMSDK.get_specified_friends_info = this.lib.func(
+    this.nativeSdk.get_specified_friends_info = this.lib.func(
       '__stdcall',
       'get_specified_friends_info',
       'void',
       ['baseCallback *', 'str', 'str', 'int']
     );
-    this.libOpenIMSDK.get_friend_list = this.lib.func(
+    this.nativeSdk.get_friend_list = this.lib.func(
       '__stdcall',
       'get_friend_list',
       'void',
       ['baseCallback *', 'str', 'int']
     );
-    this.libOpenIMSDK.get_friend_list_page = this.lib.func(
+    this.nativeSdk.get_friend_list_page = this.lib.func(
       '__stdcall',
       'get_friend_list_page',
       'void',
       ['baseCallback *', 'str', 'int', 'int', 'int']
     );
-    this.libOpenIMSDK.search_friends = this.lib.func(
+    this.nativeSdk.search_friends = this.lib.func(
       '__stdcall',
       'search_friends',
       'void',
       ['baseCallback *', 'str', 'str']
     );
-    this.libOpenIMSDK.check_friend = this.lib.func(
+    this.nativeSdk.check_friend = this.lib.func(
       '__stdcall',
       'check_friend',
       'void',
       ['baseCallback *', 'str', 'str']
     );
-    this.libOpenIMSDK.add_friend = this.lib.func(
+    this.nativeSdk.add_friend = this.lib.func(
       '__stdcall',
       'add_friend',
       'void',
       ['baseCallback *', 'str', 'str']
     );
-    this.libOpenIMSDK.delete_friend = this.lib.func(
+    this.nativeSdk.delete_friend = this.lib.func(
       '__stdcall',
       'delete_friend',
       'void',
       ['baseCallback *', 'str', 'str']
     );
-    this.libOpenIMSDK.get_friend_application_list_as_recipient = this.lib.func(
+    this.nativeSdk.get_friend_application_list_as_recipient = this.lib.func(
       '__stdcall',
       'get_friend_application_list_as_recipient',
       'void',
       ['baseCallback *', 'str', 'str']
     );
-    this.libOpenIMSDK.get_friend_application_list_as_applicant = this.lib.func(
+    this.nativeSdk.get_friend_application_list_as_applicant = this.lib.func(
       '__stdcall',
       'get_friend_application_list_as_applicant',
       'void',
       ['baseCallback *', 'str', 'str']
     );
-    this.libOpenIMSDK.get_friend_application_unhandled_count = this.lib.func(
+    this.nativeSdk.get_friend_application_unhandled_count = this.lib.func(
       '__stdcall',
       'get_friend_application_unhandled_count',
       'void',
       ['baseCallback *', 'str', 'str']
     );
-    this.libOpenIMSDK.accept_friend_application = this.lib.func(
+    this.nativeSdk.accept_friend_application = this.lib.func(
       '__stdcall',
       'accept_friend_application',
       'void',
       ['baseCallback *', 'str', 'str']
     );
-    this.libOpenIMSDK.refuse_friend_application = this.lib.func(
+    this.nativeSdk.refuse_friend_application = this.lib.func(
       '__stdcall',
       'refuse_friend_application',
       'void',
       ['baseCallback *', 'str', 'str']
     );
-    this.libOpenIMSDK.add_black = this.lib.func(
-      '__stdcall',
-      'add_black',
-      'void',
-      ['baseCallback *', 'str', 'str', 'str']
-    );
-    this.libOpenIMSDK.get_black_list = this.lib.func(
+    this.nativeSdk.add_black = this.lib.func('__stdcall', 'add_black', 'void', [
+      'baseCallback *',
+      'str',
+      'str',
+      'str',
+    ]);
+    this.nativeSdk.get_black_list = this.lib.func(
       '__stdcall',
       'get_black_list',
       'void',
       ['baseCallback *', 'str']
     );
-    this.libOpenIMSDK.remove_black = this.lib.func(
+    this.nativeSdk.remove_black = this.lib.func(
       '__stdcall',
       'remove_black',
       'void',
       ['baseCallback *', 'str', 'str']
     );
     // Group functions
-    this.libOpenIMSDK.create_group = this.lib.func(
+    this.nativeSdk.create_group = this.lib.func(
       '__stdcall',
       'create_group',
       'void',
       ['baseCallback *', 'str', 'str']
     );
-    this.libOpenIMSDK.join_group = this.lib.func(
+    this.nativeSdk.join_group = this.lib.func(
       '__stdcall',
       'join_group',
       'void',
       ['baseCallback *', 'str', 'str', 'str', 'int', 'str']
     );
-    this.libOpenIMSDK.quit_group = this.lib.func(
+    this.nativeSdk.quit_group = this.lib.func(
       '__stdcall',
       'quit_group',
       'void',
       ['baseCallback *', 'str', 'str']
     );
-    this.libOpenIMSDK.dismiss_group = this.lib.func(
+    this.nativeSdk.dismiss_group = this.lib.func(
       '__stdcall',
       'dismiss_group',
       'void',
       ['baseCallback *', 'str', 'str']
     );
-    this.libOpenIMSDK.change_group_mute = this.lib.func(
+    this.nativeSdk.change_group_mute = this.lib.func(
       '__stdcall',
       'change_group_mute',
       'void',
       ['baseCallback *', 'str', 'str', 'int']
     );
-    this.libOpenIMSDK.change_group_member_mute = this.lib.func(
+    this.nativeSdk.change_group_member_mute = this.lib.func(
       '__stdcall',
       'change_group_member_mute',
       'void',
       ['baseCallback *', 'str', 'str', 'str', 'int']
     );
-    this.libOpenIMSDK.set_group_member_info = this.lib.func(
+    this.nativeSdk.set_group_member_info = this.lib.func(
       '__stdcall',
       'set_group_member_info',
       'void',
       ['baseCallback *', 'str', 'str']
     );
-    this.libOpenIMSDK.get_joined_group_list = this.lib.func(
+    this.nativeSdk.get_joined_group_list = this.lib.func(
       '__stdcall',
       'get_joined_group_list',
       'void',
       ['baseCallback *', 'str']
     );
-    this.libOpenIMSDK.get_joined_group_list_page = this.lib.func(
+    this.nativeSdk.get_joined_group_list_page = this.lib.func(
       '__stdcall',
       'get_joined_group_list_page',
       'void',
       ['baseCallback *', 'str', 'int', 'int']
     );
-    this.libOpenIMSDK.get_specified_groups_info = this.lib.func(
+    this.nativeSdk.get_specified_groups_info = this.lib.func(
       '__stdcall',
       'get_specified_groups_info',
       'void',
       ['baseCallback *', 'str', 'str']
     );
-    this.libOpenIMSDK.search_groups = this.lib.func(
+    this.nativeSdk.search_groups = this.lib.func(
       '__stdcall',
       'search_groups',
       'void',
       ['baseCallback *', 'str', 'str']
     );
-    this.libOpenIMSDK.set_group_info = this.lib.func(
+    this.nativeSdk.set_group_info = this.lib.func(
       '__stdcall',
       'set_group_info',
       'void',
       ['baseCallback *', 'str', 'str']
     );
-    this.libOpenIMSDK.get_group_member_list = this.lib.func(
+    this.nativeSdk.get_group_member_list = this.lib.func(
       '__stdcall',
       'get_group_member_list',
       'void',
       ['baseCallback *', 'str', 'str', 'int', 'int', 'int']
     );
-    this.libOpenIMSDK.get_group_member_owner_and_admin = this.lib.func(
+    this.nativeSdk.get_group_member_owner_and_admin = this.lib.func(
       '__stdcall',
       'get_group_member_owner_and_admin',
       'void',
       ['baseCallback *', 'str', 'str']
     );
-    this.libOpenIMSDK.get_group_member_list_by_join_time_filter = this.lib.func(
+    this.nativeSdk.get_group_member_list_by_join_time_filter = this.lib.func(
       '__stdcall',
       'get_group_member_list_by_join_time_filter',
       'void',
@@ -785,103 +789,97 @@ class OpenIMSDK
         'str',
       ]
     );
-    this.libOpenIMSDK.get_specified_group_members_info = this.lib.func(
+    this.nativeSdk.get_specified_group_members_info = this.lib.func(
       '__stdcall',
       'get_specified_group_members_info',
       'void',
       ['baseCallback *', 'str', 'str', 'str']
     );
-    this.libOpenIMSDK.kick_group_member = this.lib.func(
+    this.nativeSdk.kick_group_member = this.lib.func(
       '__stdcall',
       'kick_group_member',
       'void',
       ['baseCallback *', 'str', 'str', 'str', 'str']
     );
-    this.libOpenIMSDK.transfer_group_owner = this.lib.func(
+    this.nativeSdk.transfer_group_owner = this.lib.func(
       '__stdcall',
       'transfer_group_owner',
       'void',
       ['baseCallback *', 'str', 'str', 'str']
     );
-    this.libOpenIMSDK.invite_user_to_group = this.lib.func(
+    this.nativeSdk.invite_user_to_group = this.lib.func(
       '__stdcall',
       'invite_user_to_group',
       'void',
       ['baseCallback *', 'str', 'str', 'str', 'str']
     );
-    this.libOpenIMSDK.get_group_application_list_as_recipient = this.lib.func(
+    this.nativeSdk.get_group_application_list_as_recipient = this.lib.func(
       '__stdcall',
       'get_group_application_list_as_recipient',
       'void',
       ['baseCallback *', 'str', 'str']
     );
-    this.libOpenIMSDK.get_group_application_list_as_applicant = this.lib.func(
+    this.nativeSdk.get_group_application_list_as_applicant = this.lib.func(
       '__stdcall',
       'get_group_application_list_as_applicant',
       'void',
       ['baseCallback *', 'str', 'str']
     );
-    this.libOpenIMSDK.get_group_application_unhandled_count = this.lib.func(
+    this.nativeSdk.get_group_application_unhandled_count = this.lib.func(
       '__stdcall',
       'get_group_application_unhandled_count',
       'void',
       ['baseCallback *', 'str', 'str']
     );
-    this.libOpenIMSDK.get_group_application_badge_count = this.lib.func(
-      '__stdcall',
-      'get_group_application_badge_count',
-      'void',
-      ['baseCallback *', 'str']
-    );
-    this.libOpenIMSDK.clear_group_application_badge_count = this.lib.func(
-      '__stdcall',
-      'clear_group_application_badge_count',
-      'void',
-      ['baseCallback *', 'str']
-    );
-    this.libOpenIMSDK.accept_group_application = this.lib.func(
+    this.nativeSdk.accept_group_application = this.lib.func(
       '__stdcall',
       'accept_group_application',
       'void',
       ['baseCallback *', 'str', 'str', 'str', 'str']
     );
-    this.libOpenIMSDK.refuse_group_application = this.lib.func(
+    this.nativeSdk.refuse_group_application = this.lib.func(
       '__stdcall',
       'refuse_group_application',
       'void',
       ['baseCallback *', 'str', 'str', 'str', 'str']
     );
-    this.libOpenIMSDK.search_group_members = this.lib.func(
+    this.nativeSdk.search_group_members = this.lib.func(
       '__stdcall',
       'search_group_members',
       'void',
       ['baseCallback *', 'str', 'str']
     );
-    this.libOpenIMSDK.is_join_group = this.lib.func(
+    this.nativeSdk.is_join_group = this.lib.func(
       '__stdcall',
       'is_join_group',
       'void',
       ['baseCallback *', 'str', 'str']
     );
-    this.libOpenIMSDK.get_users_in_group = this.lib.func(
+    this.nativeSdk.get_users_in_group = this.lib.func(
       '__stdcall',
       'get_users_in_group',
       'void',
       ['baseCallback *', 'str', 'str', 'str']
     );
-    this.libOpenIMSDK.upload_file = this.lib.func(
+    this.nativeSdk.update_fcm_token = this.lib.func(
+      '__stdcall',
+      'update_fcm_token',
+      'void',
+      ['baseCallback *', 'str', 'str', 'long long']
+    );
+    this.nativeSdk.upload_file = this.lib.func(
       '__stdcall',
       'upload_file',
       'void',
       ['baseCallback *', 'str', 'str', 'listenerCallback *']
     );
-    this.libOpenIMSDK.upload_logs = this.lib.func(
+    this.nativeSdk.upload_logs = this.lib.func(
       '__stdcall',
       'upload_logs',
       'void',
       ['baseCallback *', 'str', 'int', 'str', 'listenerCallback *']
     );
-    this.libOpenIMSDK.logs = this.lib.func('__stdcall', 'logs', 'void', [
+    this.nativeSdk.logs = this.lib.func('__stdcall', 'logs', 'void', [
       'baseCallback *',
       'str',
       'int',
@@ -891,134 +889,34 @@ class OpenIMSDK
       'str',
       'str',
     ]);
-
-    // advance
-    if (this.basertc || this.enterprise) {
-      this.libOpenIMSDK.set_signaling_listener = this.lib.func(
-        '__stdcall',
-        'set_signaling_listener',
-        'void',
-        ['listenerCallback *']
-      );
-      this.libOpenIMSDK.signaling_invite_in_group = this.lib.func(
-        '__stdcall',
-        'signaling_invite_in_group',
-        'void',
-        ['baseCallback *', 'str', 'str']
-      );
-
-      this.libOpenIMSDK.signaling_invite = this.lib.func(
-        '__stdcall',
-        'signaling_invite',
-        'void',
-        ['baseCallback *', 'str', 'str']
-      );
-
-      this.libOpenIMSDK.signaling_accept = this.lib.func(
-        '__stdcall',
-        'signaling_accept',
-        'void',
-        ['baseCallback *', 'str', 'str']
-      );
-
-      this.libOpenIMSDK.signaling_reject = this.lib.func(
-        '__stdcall',
-        'signaling_reject',
-        'void',
-        ['baseCallback *', 'str', 'str']
-      );
-
-      this.libOpenIMSDK.signaling_cancel = this.lib.func(
-        '__stdcall',
-        'signaling_cancel',
-        'void',
-        ['baseCallback *', 'str', 'str']
-      );
-
-      this.libOpenIMSDK.signaling_hung_up = this.lib.func(
-        '__stdcall',
-        'signaling_hung_up',
-        'void',
-        ['baseCallback *', 'str', 'str']
-      );
-
-      this.libOpenIMSDK.signaling_get_room_by_group_id = this.lib.func(
-        '__stdcall',
-        'signaling_get_room_by_group_id',
-        'void',
-        ['baseCallback *', 'str', 'str']
-      );
-
-      this.libOpenIMSDK.signaling_get_token_by_room_id = this.lib.func(
-        '__stdcall',
-        'signaling_get_token_by_room_id',
-        'void',
-        ['baseCallback *', 'str', 'str']
-      );
-
-      this.libOpenIMSDK.get_signaling_invitation_info_start_app = this.lib.func(
-        '__stdcall',
-        'get_signaling_invitation_info_start_app',
-        'void',
-        ['baseCallback *', 'str']
-      );
-
-      this.libOpenIMSDK.signaling_send_custom_signal = this.lib.func(
-        '__stdcall',
-        'signaling_send_custom_signal',
-        'void',
-        ['baseCallback *', 'str', 'str', 'str']
-      );
-    }
-    if (this.enterprise) {
-      this.libOpenIMSDK.send_group_message_read_receipt = this.lib.func(
-        '__stdcall',
-        'send_group_message_read_receipt',
-        'void',
-        ['baseCallback *', 'str', 'str', 'str']
-      );
-      this.libOpenIMSDK.get_group_message_reader_list = this.lib.func(
-        '__stdcall',
-        'get_group_message_reader_list',
-        'void',
-        ['baseCallback *', 'str', 'str', 'str', 'int', 'int', 'int']
-      );
-      this.libOpenIMSDK.fetch_surrounding_messages = this.lib.func(
-        '__stdcall',
-        'fetch_surrounding_messages',
-        'void',
-        ['baseCallback *', 'str', 'str']
-      );
-    }
   };
 
   generateEventResponse = (
+    event: SdkEvent,
     data: unknown,
     operationID = '',
     forceGetData = false
-  ): BaseResponse => {
+  ): SdkResponse => {
     let errCode = 0;
     let errMsg = '';
-    try {
-      data = JSON.parse(data as string);
-    } catch (error) {
-      // do nothing
+    if (typeof data === 'string') {
+      try {
+        data = JSON.parse(data);
+      } catch {
+        // Keep non-JSON event payloads as strings.
+      }
     }
-    // @ts-ignore
-    if (isObject(data) && data.errCode !== undefined) {
-      // @ts-ignore
-      errCode = data.errCode;
-      // @ts-ignore
-      errMsg = data.errMsg;
-      // @ts-ignore
+    if (isRecord(data) && data.errCode !== undefined) {
+      errCode = typeof data.errCode === 'number' ? data.errCode : 0;
+      errMsg = typeof data.errMsg === 'string' ? data.errMsg : '';
       data = data.data;
     }
-    if (forceGetData) {
-      // @ts-ignore
+    if (forceGetData && isRecord(data)) {
       const values = Object.values(data);
       data = values[0];
     }
     return {
+      event,
       errCode,
       errMsg,
       data,
@@ -1027,21 +925,22 @@ class OpenIMSDK
   };
 
   baseCallbackWrap = <T>(
-    resolve: (response: BaseResponse<T>) => void,
-    reject: (response: BaseResponse<T>) => void
+    resolve: (response: SdkResponse<T>) => void,
+    reject: (response: SdkResponse<T>) => void
   ) => {
     const registerBaseCallback = koffi.register(
       (operationID: string, errCode: number, errMsg: string, data: string) => {
-        let realData;
+        let realData: unknown;
         try {
           realData = JSON.parse(data);
-        } catch (error) {
+        } catch {
           realData = data;
         }
-        const response: BaseResponse<T> = {
+        const response: SdkResponse<T> = {
+          event: '',
           errCode,
           errMsg,
-          data: realData,
+          data: realData as T,
           operationID,
         };
         if (errCode === 0) {
@@ -1058,8 +957,8 @@ class OpenIMSDK
 
   sendMessageCallbackWrap = <T>(
     clientMsgID: string,
-    resolve: (response: BaseResponse<T>) => void,
-    reject: (response: BaseResponse<T>) => void
+    resolve: (response: SdkResponse<T>) => void,
+    reject: (response: SdkResponse<T>) => void
   ) => {
     const registerSendMessageCallback = koffi.register(
       (
@@ -1069,23 +968,25 @@ class OpenIMSDK
         data: string,
         progress: number
       ) => {
-        let realData;
+        let realData: unknown;
         try {
           realData = JSON.parse(data);
-        } catch (error) {
+        } catch {
           realData = data;
         }
-        const response: BaseResponse<T> = {
+        const response: SdkResponse<T> = {
+          event: '',
           errCode,
           errMsg,
-          data: realData,
+          data: realData as T,
           operationID,
         };
         if (!errCode && !errMsg && !data) {
           // eslint-disable-next-line
           this.emit(
-            CbEvents.OnProgress,
+            SdkEvent.OnProgress,
             this.generateEventResponse(
+              SdkEvent.OnProgress,
               {
                 clientMsgID,
                 progress,
@@ -1107,17 +1008,20 @@ class OpenIMSDK
     return registerSendMessageCallback;
   };
 
-  asyncRetunWrap = <T>(operationID: string, data: unknown) =>
-    new Promise<BaseResponse<T>>((resolve, reject) => {
-      const hasError = !data && !operationID.includes('unInitSDK');
+  asyncReturnWrap = <T>(operationID: string, data: unknown) =>
+    new Promise<SdkResponse<T>>((resolve, reject) => {
+      const hasError =
+        (data === undefined || data === null) &&
+        !operationID.includes('unInitSDK');
       if (data && typeof data === 'string') {
         try {
           data = JSON.parse(data);
-        } catch (error) {
-          // do nothing
+        } catch {
+          // Keep non-JSON synchronous return values as strings.
         }
       }
       const response = {
+        event: '',
         errCode: hasError ? ErrorCode.UnknownError : 0,
         errMsg: '',
         data: data as T,
@@ -1131,21 +1035,18 @@ class OpenIMSDK
     });
 
   setListener = () => {
-    this.libOpenIMSDK.set_user_listener(this.listenerCallback);
-    this.libOpenIMSDK.set_friend_listener(this.listenerCallback);
-    this.libOpenIMSDK.set_group_listener(this.listenerCallback);
-    this.libOpenIMSDK.set_conversation_listener(this.listenerCallback);
-    this.libOpenIMSDK.set_advanced_msg_listener(this.listenerCallback);
-    this.libOpenIMSDK.set_batch_msg_listener(this.listenerCallback);
-    this.libOpenIMSDK.set_custom_business_listener(this.listenerCallback);
-    if (this.enterprise || this.basertc) {
-      this.libOpenIMSDK.set_signaling_listener(this.listenerCallback);
-    }
+    this.nativeSdk.set_user_listener(this.listenerCallback);
+    this.nativeSdk.set_friend_listener(this.listenerCallback);
+    this.nativeSdk.set_group_listener(this.listenerCallback);
+    this.nativeSdk.set_conversation_listener(this.listenerCallback);
+    this.nativeSdk.set_advanced_msg_listener(this.listenerCallback);
+    this.nativeSdk.set_batch_msg_listener(this.listenerCallback);
+    this.nativeSdk.set_custom_business_listener(this.listenerCallback);
   };
 
   initSDK = (param: InitConfig, opid = uuidV4()) =>
     new Promise<boolean>((resolve, reject) => {
-      const flag = this.libOpenIMSDK.init_sdk(
+      const flag = this.nativeSdk.init_sdk(
         this.listenerCallback,
         opid,
         JSON.stringify(param)
@@ -1158,36 +1059,33 @@ class OpenIMSDK
       resolve(!!flag);
     });
 
-  login = (param: LoginParams, opid = uuidV4()) =>
-    new Promise<BaseResponse>((resolve, reject) => {
-      const loginCallback = this.baseCallbackWrap(resolve, reject);
-      this.libOpenIMSDK.login(loginCallback, opid, param.userID, param.token);
+  login = (param: NativeLoginParams, opid = uuidV4()) =>
+    new Promise<SdkResponse<void>>((resolve, reject) => {
+      const loginCallback = this.baseCallbackWrap<void>(resolve, reject);
+      this.nativeSdk.login(loginCallback, opid, param.userID, param.token);
     });
 
   getLoginStatus = (opid = uuidV4()) =>
-    this.asyncRetunWrap<LoginStatus>(
+    this.asyncReturnWrap<LoginStatus>(
       opid,
-      this.libOpenIMSDK.get_login_status(opid)
+      this.nativeSdk.get_login_status(opid)
     );
 
-  getLoginUser = (opid = uuidV4()) =>
-    this.asyncRetunWrap<SelfUserInfo>(opid, this.libOpenIMSDK.get_login_user());
-
   logout = (opid = uuidV4()) =>
-    new Promise<BaseResponse>((resolve, reject) => {
-      const logoutCallback = this.baseCallbackWrap(resolve, reject);
-      this.libOpenIMSDK.logout(logoutCallback, opid);
+    new Promise<SdkResponse<void>>((resolve, reject) => {
+      const logoutCallback = this.baseCallbackWrap<void>(resolve, reject);
+      this.nativeSdk.logout(logoutCallback, opid);
     });
 
   unInitSDK = (opid = uuidV4()) =>
-    this.asyncRetunWrap(
+    this.asyncReturnWrap(
       `unInitSDK-${opid}`,
-      this.libOpenIMSDK.un_init_sdk(`unInitSDK-${opid}`)
+      this.nativeSdk.un_init_sdk(`unInitSDK-${opid}`)
     );
 
   setAppBackgroundStatus = (isInBackground: boolean, opid = uuidV4()) =>
-    new Promise<BaseResponse<void>>((resolve, reject) => {
-      this.libOpenIMSDK.set_app_background_status(
+    new Promise<SdkResponse<void>>((resolve, reject) => {
+      this.nativeSdk.set_app_background_status(
         this.baseCallbackWrap<void>(resolve, reject),
         opid,
         isInBackground ? 1 : 0
@@ -1195,16 +1093,26 @@ class OpenIMSDK
     });
 
   networkStatusChanged = (opid = uuidV4()) =>
-    new Promise<BaseResponse<void>>((resolve, reject) => {
-      this.libOpenIMSDK.network_status_changed(
+    new Promise<SdkResponse<void>>((resolve, reject) => {
+      this.nativeSdk.network_status_changed(
         this.baseCallbackWrap<void>(resolve, reject),
         opid
       );
     });
 
+  updateFcmToken = (fcmToken: string, expireTime: number, opid = uuidV4()) =>
+    new Promise<SdkResponse<void>>((resolve, reject) => {
+      this.nativeSdk.update_fcm_token(
+        this.baseCallbackWrap<void>(resolve, reject),
+        opid,
+        fcmToken,
+        expireTime
+      );
+    });
+
   uploadFile = (params: UploadFileParams, opid = uuidV4()) =>
-    new Promise<BaseResponse<{ url: string }>>((resolve, reject) => {
-      this.libOpenIMSDK.upload_file(
+    new Promise<SdkResponse<{ url: string }>>((resolve, reject) => {
+      this.nativeSdk.upload_file(
         this.baseCallbackWrap(resolve, reject),
         opid,
         JSON.stringify(params),
@@ -1213,8 +1121,8 @@ class OpenIMSDK
     });
 
   uploadLogs = (params: UploadLogsParams, opid = uuidV4()) =>
-    new Promise<BaseResponse<void>>((resolve, reject) => {
-      this.libOpenIMSDK.upload_logs(
+    new Promise<SdkResponse<void>>((resolve, reject) => {
+      this.nativeSdk.upload_logs(
         this.baseCallbackWrap(resolve, reject),
         opid,
         params.line,
@@ -1223,9 +1131,9 @@ class OpenIMSDK
       );
     });
 
-  verboseLogs = (params: DebugLogsParams, opid = uuidV4()) =>
-    new Promise<BaseResponse<void>>((resolve, reject) => {
-      this.libOpenIMSDK.logs(
+  verboseLogs = (params: LogMessageParams, opid = uuidV4()) =>
+    new Promise<SdkResponse<void>>((resolve, reject) => {
+      this.nativeSdk.logs(
         this.baseCallbackWrap(resolve, reject),
         opid,
         LogLevel.Verbose,
@@ -1236,9 +1144,9 @@ class OpenIMSDK
         JSON.stringify(params.keyAndValue)
       );
     });
-  debugLogs = (params: DebugLogsParams, opid = uuidV4()) =>
-    new Promise<BaseResponse<void>>((resolve, reject) => {
-      this.libOpenIMSDK.logs(
+  debugLogs = (params: LogMessageParams, opid = uuidV4()) =>
+    new Promise<SdkResponse<void>>((resolve, reject) => {
+      this.nativeSdk.logs(
         this.baseCallbackWrap(resolve, reject),
         opid,
         LogLevel.Debug,
@@ -1249,9 +1157,9 @@ class OpenIMSDK
         JSON.stringify(params.keyAndValue)
       );
     });
-  infoLogs = (params: DebugLogsParams, opid = uuidV4()) =>
-    new Promise<BaseResponse<void>>((resolve, reject) => {
-      this.libOpenIMSDK.logs(
+  infoLogs = (params: LogMessageParams, opid = uuidV4()) =>
+    new Promise<SdkResponse<void>>((resolve, reject) => {
+      this.nativeSdk.logs(
         this.baseCallbackWrap(resolve, reject),
         opid,
         LogLevel.Info,
@@ -1262,9 +1170,9 @@ class OpenIMSDK
         JSON.stringify(params.keyAndValue)
       );
     });
-  warnLogs = (params: ErrorLogsParams, opid = uuidV4()) =>
-    new Promise<BaseResponse<void>>((resolve, reject) => {
-      this.libOpenIMSDK.logs(
+  warnLogs = (params: LogErrorParams, opid = uuidV4()) =>
+    new Promise<SdkResponse<void>>((resolve, reject) => {
+      this.nativeSdk.logs(
         this.baseCallbackWrap(resolve, reject),
         opid,
         LogLevel.Warn,
@@ -1275,9 +1183,9 @@ class OpenIMSDK
         JSON.stringify([])
       );
     });
-  errorLogs = (params: ErrorLogsParams, opid = uuidV4()) =>
-    new Promise<BaseResponse<void>>((resolve, reject) => {
-      this.libOpenIMSDK.logs(
+  errorLogs = (params: LogErrorParams, opid = uuidV4()) =>
+    new Promise<SdkResponse<void>>((resolve, reject) => {
+      this.nativeSdk.logs(
         this.baseCallbackWrap(resolve, reject),
         opid,
         LogLevel.Error,
@@ -1288,9 +1196,9 @@ class OpenIMSDK
         JSON.stringify([])
       );
     });
-  fatalLogs = (params: ErrorLogsParams, opid = uuidV4()) =>
-    new Promise<BaseResponse<void>>((resolve, reject) => {
-      this.libOpenIMSDK.logs(
+  fatalLogs = (params: LogErrorParams, opid = uuidV4()) =>
+    new Promise<SdkResponse<void>>((resolve, reject) => {
+      this.nativeSdk.logs(
         this.baseCallbackWrap(resolve, reject),
         opid,
         LogLevel.Fatal,
@@ -1301,9 +1209,9 @@ class OpenIMSDK
         JSON.stringify([])
       );
     });
-  panicLogs = (params: ErrorLogsParams, opid = uuidV4()) =>
-    new Promise<BaseResponse<void>>((resolve, reject) => {
-      this.libOpenIMSDK.logs(
+  panicLogs = (params: LogErrorParams, opid = uuidV4()) =>
+    new Promise<SdkResponse<void>>((resolve, reject) => {
+      this.nativeSdk.logs(
         this.baseCallbackWrap(resolve, reject),
         opid,
         LogLevel.Panic,
@@ -1322,7 +1230,7 @@ class OpenIMSDK
   subscribeUsersStatus!: UserModuleApi['subscribeUsersStatus'];
   unsubscribeUsersStatus!: UserModuleApi['unsubscribeUsersStatus'];
   getSubscribeUsersStatus!: UserModuleApi['getSubscribeUsersStatus'];
-  setGlobalRecvMessageOpt!: UserModuleApi['setGlobalRecvMessageOpt'];
+  getUserStatus!: UserModuleApi['getUserStatus'];
 
   // implements friend api
   acceptFriendApplication!: FriendModuleApi['acceptFriendApplication'];
@@ -1331,10 +1239,6 @@ class OpenIMSDK
   checkFriend!: FriendModuleApi['checkFriend'];
   deleteFriend!: FriendModuleApi['deleteFriend'];
   getBlackList!: FriendModuleApi['getBlackList'];
-  setFriendsEx!: (
-    params: SetFriendExParams,
-    opid?: string | undefined
-  ) => Promise<BaseResponse<void>>;
   getFriendApplicationListAsApplicant!: FriendModuleApi['getFriendApplicationListAsApplicant'];
   getFriendApplicationListAsRecipient!: FriendModuleApi['getFriendApplicationListAsRecipient'];
   getFriendApplicationUnhandledCount!: FriendModuleApi['getFriendApplicationUnhandledCount'];
@@ -1344,7 +1248,6 @@ class OpenIMSDK
   refuseFriendApplication!: FriendModuleApi['refuseFriendApplication'];
   removeBlack!: FriendModuleApi['removeBlack'];
   searchFriends!: FriendModuleApi['searchFriends'];
-  setFriendRemark!: FriendModuleApi['setFriendRemark'];
   updateFriends!: FriendModuleApi['updateFriends'];
 
   // implements group api
@@ -1359,8 +1262,6 @@ class OpenIMSDK
   getGroupApplicationListAsRecipient!: GroupModuleApi['getGroupApplicationListAsRecipient'];
   getGroupApplicationListAsApplicant!: GroupModuleApi['getGroupApplicationListAsApplicant'];
   getGroupApplicationUnhandledCount!: GroupModuleApi['getGroupApplicationUnhandledCount'];
-  getGroupApplicationBadgeCount!: GroupModuleApi['getGroupApplicationBadgeCount'];
-  clearGroupApplicationBadgeCount!: GroupModuleApi['clearGroupApplicationBadgeCount'];
   acceptGroupApplication!: GroupModuleApi['acceptGroupApplication'];
   refuseGroupApplication!: GroupModuleApi['refuseGroupApplication'];
   getGroupMemberList!: GroupModuleApi['getGroupMemberList'];
@@ -1382,32 +1283,24 @@ class OpenIMSDK
   getAllConversationList!: ConversationModuleApi['getAllConversationList'];
   getConversationListSplit!: ConversationModuleApi['getConversationListSplit'];
   getOneConversation!: ConversationModuleApi['getOneConversation'];
-  setConversation!: ConversationModuleApi['setConversation'];
-  setConversationEx!: (
-    params: SetConversationExParams,
-    opid?: string | undefined
-  ) => Promise<BaseResponse<void>>;
   getMultipleConversation!: ConversationModuleApi['getMultipleConversation'];
-  getConversationIDBySessionType!: ConversationModuleApi['getConversationIDBySessionType'];
+  searchConversation!: ConversationModuleApi['searchConversation'];
   getTotalUnreadMsgCount!: ConversationModuleApi['getTotalUnreadMsgCount'];
   markConversationMessageAsRead!: ConversationModuleApi['markConversationMessageAsRead'];
+  markAllConversationMessageAsRead!: ConversationModuleApi['markAllConversationMessageAsRead'];
   setConversationDraft!: ConversationModuleApi['setConversationDraft'];
-  pinConversation!: ConversationModuleApi['pinConversation'];
-  setConversationRecvMessageOpt!: ConversationModuleApi['setConversationRecvMessageOpt'];
-  setConversationPrivateChat!: ConversationModuleApi['setConversationPrivateChat'];
-  setConversationBurnDuration!: ConversationModuleApi['setConversationBurnDuration'];
-  resetConversationGroupAtType!: ConversationModuleApi['resetConversationGroupAtType'];
+  setConversation!: ConversationModuleApi['setConversation'];
   hideConversation!: ConversationModuleApi['hideConversation'];
-  hideAllConversation!: ConversationModuleApi['hideAllConversation'];
+  hideAllConversations!: ConversationModuleApi['hideAllConversations'];
   clearConversationAndDeleteAllMsg!: ConversationModuleApi['clearConversationAndDeleteAllMsg'];
   deleteConversationAndDeleteAllMsg!: ConversationModuleApi['deleteConversationAndDeleteAllMsg'];
-  setConversationMsgDestructTime!: ConversationModuleApi['setConversationMsgDestructTime'];
-  setConversationIsMsgDestruct!: ConversationModuleApi['setConversationIsMsgDestruct'];
   changeInputStates!: ConversationModuleApi['changeInputStates'];
   getInputStates!: ConversationModuleApi['getInputStates'];
 
   // implements message api
   createTextMessage!: MessageModuleApi['createTextMessage'];
+  createAdvancedTextMessage!: MessageModuleApi['createAdvancedTextMessage'];
+  createAdvancedQuoteMessage!: MessageModuleApi['createAdvancedQuoteMessage'];
   createTextAtMessage!: MessageModuleApi['createTextAtMessage'];
   createLocationMessage!: MessageModuleApi['createLocationMessage'];
   createCustomMessage!: MessageModuleApi['createCustomMessage'];
@@ -1430,12 +1323,11 @@ class OpenIMSDK
   createFileMessageByURL!: MessageModuleApi['createFileMessageByURL'];
   getAdvancedHistoryMessageList!: MessageModuleApi['getAdvancedHistoryMessageList'];
   getAdvancedHistoryMessageListReverse!: MessageModuleApi['getAdvancedHistoryMessageListReverse'];
-  fetchSurroundingMessages!: MessageModuleApi['fetchSurroundingMessages'];
   sendMessage!: MessageModuleApi['sendMessage'];
   sendMessageNotOss!: MessageModuleApi['sendMessageNotOss'];
   findMessageList!: MessageModuleApi['findMessageList'];
+  getAtAllTag!: MessageModuleApi['getAtAllTag'];
   revokeMessage!: MessageModuleApi['revokeMessage'];
-  typingStatusUpdate!: MessageModuleApi['typingStatusUpdate'];
   deleteMessageFromLocalStorage!: MessageModuleApi['deleteMessageFromLocalStorage'];
   deleteMessage!: MessageModuleApi['deleteMessage'];
   deleteAllMsgFromLocalAndSvr!: MessageModuleApi['deleteAllMsgFromLocalAndSvr'];
@@ -1444,20 +1336,6 @@ class OpenIMSDK
   insertGroupMessageToLocalStorage!: MessageModuleApi['insertGroupMessageToLocalStorage'];
   insertSingleMessageToLocalStorage!: MessageModuleApi['insertSingleMessageToLocalStorage'];
   setMessageLocalEx!: MessageModuleApi['setMessageLocalEx'];
-  sendGroupMessageReadReceipt!: MessageModuleApi['sendGroupMessageReadReceipt'];
-  getGroupMessageReaderList!: MessageModuleApi['getGroupMessageReaderList'];
-
-  // implements signaling api
-  signalingInviteInGroup!: SignalingModuleApi['signalingInviteInGroup'];
-  signalingInvite!: SignalingModuleApi['signalingInvite'];
-  signalingAccept!: SignalingModuleApi['signalingAccept'];
-  signalingReject!: SignalingModuleApi['signalingReject'];
-  signalingCancel!: SignalingModuleApi['signalingCancel'];
-  signalingHungUp!: SignalingModuleApi['signalingHungUp'];
-  signalingGetRoomByGroupID!: SignalingModuleApi['signalingGetRoomByGroupID'];
-  signalingGetTokenByRoomID!: SignalingModuleApi['signalingGetTokenByRoomID'];
-  signalingSendCustomSignal!: SignalingModuleApi['signalingSendCustomSignal'];
-  getSignalingInvitationInfoStartApp!: SignalingModuleApi['getSignalingInvitationInfoStartApp'];
 }
 
-export default OpenIMSDK;
+export default OpenIMSdk;

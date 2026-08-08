@@ -1,262 +1,184 @@
-import { v4 as uuidV4 } from 'uuid';
-import { BaseResponse } from '@/types/entity';
-import OpenIMSDK from '..';
+import { uuidV4 } from '@/utils/uuid';
 import {
-  SplitConversationParams,
-  GetOneConversationParams,
-  SetConversationDraftParams,
-  SetConversationPinParams,
-  SetConversationRecvOptParams,
-  SetConversationPrivateStateParams,
-  SetBurnDurationParams,
-  SetConversationExParams,
-  SetConversationMsgDestructTimeParams,
-  SetConversationMsgDestructParams,
-  SetConversationParams,
   ChangeInputStatesParams,
-  GetInputstatesParams,
-} from '@openim/wasm-client-sdk/lib/types/params';
-import { ConversationItem } from '@openim/wasm-client-sdk/lib/types/entity';
-import { GroupAtType, Platform } from '@openim/wasm-client-sdk';
+  ConversationItem,
+  ConversationListPaginationParams,
+  ConversationSessionParams,
+  GetInputStatesParams,
+  Platform,
+  SetConversationDraftParams,
+  SetConversationParams,
+} from '@openim/wasm-client-sdk';
+import { SdkResponse } from '@/types/entity';
+import OpenIMSdk from '..';
 
-export function setupConversationModule(openIMSDK: OpenIMSDK) {
+export function setupConversationModule(openIMSdk: OpenIMSdk) {
   return {
-    getAllConversationList: (opid = uuidV4()) =>
-      new Promise<BaseResponse<ConversationItem[]>>((resolve, reject) => {
-        openIMSDK.libOpenIMSDK.get_all_conversation_list(
-          openIMSDK.baseCallbackWrap<ConversationItem[]>(resolve, reject),
-          opid
+    getAllConversationList: (operationID = uuidV4()) =>
+      new Promise<SdkResponse<ConversationItem[]>>((resolve, reject) => {
+        openIMSdk.nativeSdk.get_all_conversation_list(
+          openIMSdk.baseCallbackWrap<ConversationItem[]>(resolve, reject),
+          operationID
         );
       }),
+
     getConversationListSplit: (
-      params: SplitConversationParams,
-      opid = uuidV4()
+      params: ConversationListPaginationParams,
+      operationID = uuidV4()
     ) =>
-      new Promise<BaseResponse<ConversationItem[]>>((resolve, reject) => {
-        openIMSDK.libOpenIMSDK.get_conversation_list_split(
-          openIMSDK.baseCallbackWrap<ConversationItem[]>(resolve, reject),
-          opid,
+      new Promise<SdkResponse<ConversationItem[]>>((resolve, reject) => {
+        openIMSdk.nativeSdk.get_conversation_list_split(
+          openIMSdk.baseCallbackWrap<ConversationItem[]>(resolve, reject),
+          operationID,
           params.offset,
           params.count
         );
       }),
-    getOneConversation: (params: GetOneConversationParams, opid = uuidV4()) =>
-      new Promise<BaseResponse<ConversationItem>>((resolve, reject) => {
-        openIMSDK.libOpenIMSDK.get_one_conversation(
-          openIMSDK.baseCallbackWrap<ConversationItem>(resolve, reject),
-          opid,
+
+    getOneConversation: (
+      params: ConversationSessionParams,
+      operationID = uuidV4()
+    ) =>
+      new Promise<SdkResponse<ConversationItem>>((resolve, reject) => {
+        openIMSdk.nativeSdk.get_one_conversation(
+          openIMSdk.baseCallbackWrap<ConversationItem>(resolve, reject),
+          operationID,
           params.sessionType,
           params.sourceID
         );
       }),
-    setConversationEx: (params: SetConversationExParams, opid = uuidV4()) =>
-      new Promise<BaseResponse<void>>((resolve, reject) => {
-        openIMSDK.libOpenIMSDK.set_conversation(
-          openIMSDK.baseCallbackWrap<void>(resolve, reject),
-          opid,
-          params.conversationID,
-          JSON.stringify({
-            ex: params.ex,
-          })
-        );
-      }),
-    getMultipleConversation: (conversationIDList: string, opid = uuidV4()) =>
-      new Promise<BaseResponse<ConversationItem[]>>((resolve, reject) => {
-        openIMSDK.libOpenIMSDK.get_multiple_conversation(
-          openIMSDK.baseCallbackWrap<ConversationItem[]>(resolve, reject),
-          opid,
-          conversationIDList
-        );
-      }),
-    getConversationIDBySessionType: (
-      params: GetOneConversationParams,
-      opid = uuidV4()
+
+    getMultipleConversation: (
+      conversationIDList: string[],
+      operationID = uuidV4()
     ) =>
-      openIMSDK.asyncRetunWrap<string>(
-        opid,
-        openIMSDK.libOpenIMSDK.get_conversation_id_by_session_type(
-          opid,
-          params.sourceID,
-          params.sessionType
-        )
-      ),
-    getTotalUnreadMsgCount: (opid = uuidV4()) =>
-      new Promise<BaseResponse<number>>((resolve, reject) => {
-        openIMSDK.libOpenIMSDK.get_total_unread_msg_count(
-          openIMSDK.baseCallbackWrap<number>(resolve, reject),
-          opid
+      new Promise<SdkResponse<ConversationItem[]>>((resolve, reject) => {
+        openIMSdk.nativeSdk.get_multiple_conversation(
+          openIMSdk.baseCallbackWrap<ConversationItem[]>(resolve, reject),
+          operationID,
+          JSON.stringify(conversationIDList)
         );
       }),
-    markConversationMessageAsRead: (conversationID: string, opid = uuidV4()) =>
-      new Promise<BaseResponse<void>>((resolve, reject) => {
-        openIMSDK.libOpenIMSDK.mark_conversation_message_as_read(
-          openIMSDK.baseCallbackWrap<void>(resolve, reject),
-          opid,
+
+    searchConversation: (searchParam: string, operationID = uuidV4()) =>
+      new Promise<SdkResponse<ConversationItem[]>>((resolve, reject) => {
+        openIMSdk.nativeSdk.search_conversation(
+          openIMSdk.baseCallbackWrap<ConversationItem[]>(resolve, reject),
+          operationID,
+          searchParam
+        );
+      }),
+
+    getTotalUnreadMsgCount: (operationID = uuidV4()) =>
+      new Promise<SdkResponse<number>>((resolve, reject) => {
+        openIMSdk.nativeSdk.get_total_unread_msg_count(
+          openIMSdk.baseCallbackWrap<number>(resolve, reject),
+          operationID
+        );
+      }),
+
+    markConversationMessageAsRead: (
+      conversationID: string,
+      operationID = uuidV4()
+    ) =>
+      new Promise<SdkResponse<void>>((resolve, reject) => {
+        openIMSdk.nativeSdk.mark_conversation_message_as_read(
+          openIMSdk.baseCallbackWrap<void>(resolve, reject),
+          operationID,
           conversationID
         );
       }),
+
+    markAllConversationMessageAsRead: (operationID = uuidV4()) =>
+      new Promise<SdkResponse<void>>((resolve, reject) => {
+        openIMSdk.nativeSdk.mark_all_conversation_message_as_read(
+          openIMSdk.baseCallbackWrap<void>(resolve, reject),
+          operationID
+        );
+      }),
+
     setConversationDraft: (
       params: SetConversationDraftParams,
-      opid = uuidV4()
+      operationID = uuidV4()
     ) =>
-      new Promise<BaseResponse<void>>((resolve, reject) => {
-        openIMSDK.libOpenIMSDK.set_conversation_draft(
-          openIMSDK.baseCallbackWrap<void>(resolve, reject),
-          opid,
+      new Promise<SdkResponse<void>>((resolve, reject) => {
+        openIMSdk.nativeSdk.set_conversation_draft(
+          openIMSdk.baseCallbackWrap<void>(resolve, reject),
+          operationID,
           params.conversationID,
           params.draftText
         );
       }),
-    setConversation: (params: SetConversationParams, opid = uuidV4()) =>
-      new Promise<BaseResponse<void>>((resolve, reject) => {
-        openIMSDK.libOpenIMSDK.set_conversation(
-          openIMSDK.baseCallbackWrap<void>(resolve, reject),
-          opid,
+
+    setConversation: (params: SetConversationParams, operationID = uuidV4()) =>
+      new Promise<SdkResponse<void>>((resolve, reject) => {
+        openIMSdk.nativeSdk.set_conversation(
+          openIMSdk.baseCallbackWrap<void>(resolve, reject),
+          operationID,
           params.conversationID,
           JSON.stringify(params)
         );
       }),
-    pinConversation: (params: SetConversationPinParams, opid = uuidV4()) =>
-      new Promise<BaseResponse<void>>((resolve, reject) => {
-        openIMSDK.libOpenIMSDK.set_conversation(
-          openIMSDK.baseCallbackWrap<void>(resolve, reject),
-          opid,
-          params.conversationID,
-          JSON.stringify({
-            isPinned: params.isPinned,
-          })
-        );
-      }),
-    setConversationRecvMessageOpt: (
-      params: SetConversationRecvOptParams,
-      opid = uuidV4()
-    ) =>
-      new Promise<BaseResponse<void>>((resolve, reject) => {
-        openIMSDK.libOpenIMSDK.set_conversation(
-          openIMSDK.baseCallbackWrap<void>(resolve, reject),
-          opid,
-          params.conversationID,
-          JSON.stringify({
-            recvMsgOpt: params.opt,
-          })
-        );
-      }),
-    setConversationPrivateChat: (
-      params: SetConversationPrivateStateParams,
-      opid = uuidV4()
-    ) =>
-      new Promise<BaseResponse<void>>((resolve, reject) => {
-        openIMSDK.libOpenIMSDK.set_conversation(
-          openIMSDK.baseCallbackWrap<void>(resolve, reject),
-          opid,
-          params.conversationID,
-          JSON.stringify({
-            isPrivateChat: params.isPrivate,
-          })
-        );
-      }),
-    setConversationBurnDuration: (
-      params: SetBurnDurationParams,
-      opid = uuidV4()
-    ) =>
-      new Promise<BaseResponse<void>>((resolve, reject) => {
-        openIMSDK.libOpenIMSDK.set_conversation(
-          openIMSDK.baseCallbackWrap<void>(resolve, reject),
-          opid,
-          params.conversationID,
-          JSON.stringify({
-            burnDuration: params.burnDuration,
-          })
-        );
-      }),
-    resetConversationGroupAtType: (conversationID: string, opid = uuidV4()) =>
-      new Promise<BaseResponse<void>>((resolve, reject) => {
-        openIMSDK.libOpenIMSDK.set_conversation(
-          openIMSDK.baseCallbackWrap<void>(resolve, reject),
-          opid,
-          conversationID,
-          JSON.stringify({
-            groupAtType: GroupAtType.AtNormal,
-          })
-        );
-      }),
-    hideConversation: (conversationID: string, opid = uuidV4()) =>
-      new Promise<BaseResponse<void>>((resolve, reject) => {
-        openIMSDK.libOpenIMSDK.hide_conversation(
-          openIMSDK.baseCallbackWrap<void>(resolve, reject),
-          opid,
+
+    hideConversation: (conversationID: string, operationID = uuidV4()) =>
+      new Promise<SdkResponse<void>>((resolve, reject) => {
+        openIMSdk.nativeSdk.hide_conversation(
+          openIMSdk.baseCallbackWrap<void>(resolve, reject),
+          operationID,
           conversationID
         );
       }),
-    hideAllConversation: (opid = uuidV4()) =>
-      new Promise<BaseResponse<void>>((resolve, reject) => {
-        openIMSDK.libOpenIMSDK.hide_all_conversations(
-          openIMSDK.baseCallbackWrap<void>(resolve, reject),
-          opid
+
+    hideAllConversations: (operationID = uuidV4()) =>
+      new Promise<SdkResponse<void>>((resolve, reject) => {
+        openIMSdk.nativeSdk.hide_all_conversations(
+          openIMSdk.baseCallbackWrap<void>(resolve, reject),
+          operationID
         );
       }),
+
     clearConversationAndDeleteAllMsg: (
       conversationID: string,
-      opid = uuidV4()
+      operationID = uuidV4()
     ) =>
-      new Promise<BaseResponse<void>>((resolve, reject) => {
-        openIMSDK.libOpenIMSDK.clear_conversation_and_delete_all_msg(
-          openIMSDK.baseCallbackWrap<void>(resolve, reject),
-          opid,
+      new Promise<SdkResponse<void>>((resolve, reject) => {
+        openIMSdk.nativeSdk.clear_conversation_and_delete_all_msg(
+          openIMSdk.baseCallbackWrap<void>(resolve, reject),
+          operationID,
           conversationID
         );
       }),
+
     deleteConversationAndDeleteAllMsg: (
       conversationID: string,
-      opid = uuidV4()
+      operationID = uuidV4()
     ) =>
-      new Promise<BaseResponse<void>>((resolve, reject) => {
-        openIMSDK.libOpenIMSDK.delete_conversation_and_delete_all_msg(
-          openIMSDK.baseCallbackWrap<void>(resolve, reject),
-          opid,
+      new Promise<SdkResponse<void>>((resolve, reject) => {
+        openIMSdk.nativeSdk.delete_conversation_and_delete_all_msg(
+          openIMSdk.baseCallbackWrap<void>(resolve, reject),
+          operationID,
           conversationID
         );
       }),
-    setConversationMsgDestructTime: (
-      params: SetConversationMsgDestructTimeParams,
-      opid = uuidV4()
+
+    changeInputStates: (
+      params: ChangeInputStatesParams,
+      operationID = uuidV4()
     ) =>
-      new Promise<BaseResponse<void>>((resolve, reject) => {
-        openIMSDK.libOpenIMSDK.set_conversation(
-          openIMSDK.baseCallbackWrap<void>(resolve, reject),
-          opid,
-          params.conversationID,
-          JSON.stringify({
-            msgDestructTime: params.msgDestructTime,
-          })
-        );
-      }),
-    setConversationIsMsgDestruct: (
-      params: SetConversationMsgDestructParams,
-      opid = uuidV4()
-    ) =>
-      new Promise<BaseResponse<void>>((resolve, reject) => {
-        openIMSDK.libOpenIMSDK.set_conversation(
-          openIMSDK.baseCallbackWrap<void>(resolve, reject),
-          opid,
-          params.conversationID,
-          JSON.stringify({ isMsgDestruct: params.isMsgDestruct })
-        );
-      }),
-    changeInputStates: (params: ChangeInputStatesParams, opid = uuidV4()) =>
-      new Promise<BaseResponse<void>>((resolve, reject) => {
-        openIMSDK.libOpenIMSDK.change_input_states(
-          openIMSDK.baseCallbackWrap<void>(resolve, reject),
-          opid,
+      new Promise<SdkResponse<void>>((resolve, reject) => {
+        openIMSdk.nativeSdk.change_input_states(
+          openIMSdk.baseCallbackWrap<void>(resolve, reject),
+          operationID,
           params.conversationID,
           params.focus ? 1 : 0
         );
       }),
-    getInputStates: (params: GetInputstatesParams, opid = uuidV4()) =>
-      new Promise<BaseResponse<Platform[]>>((resolve, reject) => {
-        openIMSDK.libOpenIMSDK.get_input_states(
-          openIMSDK.baseCallbackWrap<Platform[]>(resolve, reject),
-          opid,
+
+    getInputStates: (params: GetInputStatesParams, operationID = uuidV4()) =>
+      new Promise<SdkResponse<Platform[]>>((resolve, reject) => {
+        openIMSdk.nativeSdk.get_input_states(
+          openIMSdk.baseCallbackWrap<Platform[]>(resolve, reject),
+          operationID,
           params.conversationID,
           params.userID
         );
@@ -266,88 +188,61 @@ export function setupConversationModule(openIMSDK: OpenIMSDK) {
 
 export interface ConversationModuleApi {
   getAllConversationList: (
-    opid?: string
-  ) => Promise<BaseResponse<ConversationItem[]>>;
+    operationID?: string
+  ) => Promise<SdkResponse<ConversationItem[]>>;
   getConversationListSplit: (
-    params: SplitConversationParams,
-    opid?: string
-  ) => Promise<BaseResponse<ConversationItem[]>>;
+    params: ConversationListPaginationParams,
+    operationID?: string
+  ) => Promise<SdkResponse<ConversationItem[]>>;
   getOneConversation: (
-    params: GetOneConversationParams,
-    opid?: string
-  ) => Promise<BaseResponse<ConversationItem>>;
-  setConversationEx: (
-    params: SetConversationExParams,
-    opid?: string
-  ) => Promise<BaseResponse<void>>;
+    params: ConversationSessionParams,
+    operationID?: string
+  ) => Promise<SdkResponse<ConversationItem>>;
   getMultipleConversation: (
-    conversationIDList: string,
-    opid?: string
-  ) => Promise<BaseResponse<ConversationItem[]>>;
-  getConversationIDBySessionType: (
-    params: GetOneConversationParams,
-    opid?: string
-  ) => Promise<BaseResponse<string>>;
-  getTotalUnreadMsgCount: (opid?: string) => Promise<BaseResponse<number>>;
+    conversationIDList: string[],
+    operationID?: string
+  ) => Promise<SdkResponse<ConversationItem[]>>;
+  searchConversation: (
+    searchParam: string,
+    operationID?: string
+  ) => Promise<SdkResponse<ConversationItem[]>>;
+  getTotalUnreadMsgCount: (
+    operationID?: string
+  ) => Promise<SdkResponse<number>>;
   markConversationMessageAsRead: (
     conversationID: string,
-    opid?: string
-  ) => Promise<BaseResponse<void>>;
+    operationID?: string
+  ) => Promise<SdkResponse<void>>;
+  markAllConversationMessageAsRead: (
+    operationID?: string
+  ) => Promise<SdkResponse<void>>;
   setConversationDraft: (
-    params: SplitConversationParams,
-    opid?: string
-  ) => Promise<BaseResponse<void>>;
-  pinConversation: (
-    params: SplitConversationParams,
-    opid?: string
-  ) => Promise<BaseResponse<void>>;
+    params: SetConversationDraftParams,
+    operationID?: string
+  ) => Promise<SdkResponse<void>>;
   setConversation: (
     params: SetConversationParams,
-    opid?: string
-  ) => Promise<BaseResponse<void>>;
-  setConversationRecvMessageOpt: (
-    params: SetConversationRecvOptParams,
-    opid?: string
-  ) => Promise<BaseResponse<void>>;
-  setConversationPrivateChat: (
-    params: SetConversationPrivateStateParams,
-    opid?: string
-  ) => Promise<BaseResponse<void>>;
-  setConversationBurnDuration: (
-    params: SetBurnDurationParams,
-    opid?: string
-  ) => Promise<BaseResponse<void>>;
-  resetConversationGroupAtType: (
-    conversationID: string,
-    opid?: string
-  ) => Promise<BaseResponse<void>>;
+    operationID?: string
+  ) => Promise<SdkResponse<void>>;
   hideConversation: (
     conversationID: string,
-    opid?: string
-  ) => Promise<BaseResponse<void>>;
-  hideAllConversation: (opid?: string) => Promise<BaseResponse<void>>;
+    operationID?: string
+  ) => Promise<SdkResponse<void>>;
+  hideAllConversations: (operationID?: string) => Promise<SdkResponse<void>>;
   clearConversationAndDeleteAllMsg: (
     conversationID: string,
-    opid?: string
-  ) => Promise<BaseResponse<void>>;
+    operationID?: string
+  ) => Promise<SdkResponse<void>>;
   deleteConversationAndDeleteAllMsg: (
     conversationID: string,
-    opid?: string
-  ) => Promise<BaseResponse<void>>;
-  setConversationMsgDestructTime: (
-    params: SetConversationMsgDestructTimeParams,
-    opid?: string
-  ) => Promise<BaseResponse<void>>;
-  setConversationIsMsgDestruct: (
-    params: SetConversationMsgDestructParams,
-    opid?: string
-  ) => Promise<BaseResponse<void>>;
+    operationID?: string
+  ) => Promise<SdkResponse<void>>;
   changeInputStates: (
     params: ChangeInputStatesParams,
-    opid?: string
-  ) => Promise<BaseResponse<void>>;
+    operationID?: string
+  ) => Promise<SdkResponse<void>>;
   getInputStates: (
-    params: GetInputstatesParams,
-    opid?: string
-  ) => Promise<BaseResponse<Platform[]>>;
+    params: GetInputStatesParams,
+    operationID?: string
+  ) => Promise<SdkResponse<Platform[]>>;
 }

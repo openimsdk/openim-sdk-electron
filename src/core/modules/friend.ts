@@ -1,48 +1,43 @@
-import { v4 as uuidV4 } from 'uuid';
-import OpenIMSDK from '..';
+import { uuidV4 } from '@/utils/uuid';
+import OpenIMSdk from '..';
 
-import { BaseResponse } from '@/types/entity';
+import { SdkResponse } from '@/types/entity';
 import {
-  AccessFriendApplicationParams,
+  HandleFriendApplicationParams,
   AddBlackParams,
   AddFriendParams,
-  GetFriendApplicationListAsApplicationParams,
+  GetFriendApplicationListAsApplicantParams,
   GetFriendApplicationListAsRecipientParams,
-  GetSelfUnhandledApplyCountParams,
+  ApplicationUnhandledCountParams,
   GetSpecifiedFriendsParams,
-  OffsetParams,
-  PinFriendParams,
-  RemarkFriendParams,
-  SearchFriendParams,
-  SetFriendExParams,
+  PaginationParams,
+  SearchFriendsParams,
   UpdateFriendsParams,
-} from '@openim/wasm-client-sdk/lib/types/params';
-import {
-  FriendshipInfo,
+  CheckFriendResultItem,
   BlackUserItem,
   FriendApplicationItem,
-  SearchedFriendsInfo,
+  SearchFriendsResultItem,
   FriendUserItem,
-} from '@openim/wasm-client-sdk/lib/types/entity';
+} from '@openim/wasm-client-sdk';
 
-export function setupFriendModule(openIMSDK: OpenIMSDK) {
+export function setupFriendModule(openIMSdk: OpenIMSdk) {
   return {
     acceptFriendApplication: (
-      params: AccessFriendApplicationParams,
+      params: HandleFriendApplicationParams,
       opid = uuidV4()
     ) =>
-      new Promise<BaseResponse<void>>((resolve, reject) => {
-        openIMSDK.libOpenIMSDK.accept_friend_application(
-          openIMSDK.baseCallbackWrap<void>(resolve, reject),
+      new Promise<SdkResponse<void>>((resolve, reject) => {
+        openIMSdk.nativeSdk.accept_friend_application(
+          openIMSdk.baseCallbackWrap<void>(resolve, reject),
           opid,
           JSON.stringify(params)
         );
       }),
 
     addBlack: (params: AddBlackParams, opid = uuidV4()) =>
-      new Promise<BaseResponse<void>>((resolve, reject) => {
-        openIMSDK.libOpenIMSDK.add_black(
-          openIMSDK.baseCallbackWrap<void>(resolve, reject),
+      new Promise<SdkResponse<void>>((resolve, reject) => {
+        openIMSdk.nativeSdk.add_black(
+          openIMSdk.baseCallbackWrap<void>(resolve, reject),
           opid,
           params.toUserID,
           params.ex ?? ''
@@ -50,62 +45,50 @@ export function setupFriendModule(openIMSDK: OpenIMSDK) {
       }),
 
     addFriend: (params: AddFriendParams, opid = uuidV4()) =>
-      new Promise<BaseResponse<void>>((resolve, reject) => {
-        openIMSDK.libOpenIMSDK.add_friend(
-          openIMSDK.baseCallbackWrap<void>(resolve, reject),
+      new Promise<SdkResponse<void>>((resolve, reject) => {
+        openIMSdk.nativeSdk.add_friend(
+          openIMSdk.baseCallbackWrap<void>(resolve, reject),
           opid,
           JSON.stringify(params)
         );
       }),
 
     checkFriend: (userIDList: string[], opid = uuidV4()) =>
-      new Promise<BaseResponse<FriendshipInfo[]>>((resolve, reject) => {
-        openIMSDK.libOpenIMSDK.check_friend(
-          openIMSDK.baseCallbackWrap<FriendshipInfo[]>(resolve, reject),
+      new Promise<SdkResponse<CheckFriendResultItem[]>>((resolve, reject) => {
+        openIMSdk.nativeSdk.check_friend(
+          openIMSdk.baseCallbackWrap<CheckFriendResultItem[]>(resolve, reject),
           opid,
           JSON.stringify(userIDList)
         );
       }),
 
     deleteFriend: (userID: string, opid = uuidV4()) =>
-      new Promise<BaseResponse<void>>((resolve, reject) => {
-        openIMSDK.libOpenIMSDK.delete_friend(
-          openIMSDK.baseCallbackWrap<void>(resolve, reject),
+      new Promise<SdkResponse<void>>((resolve, reject) => {
+        openIMSdk.nativeSdk.delete_friend(
+          openIMSdk.baseCallbackWrap<void>(resolve, reject),
           opid,
           userID
         );
       }),
 
-    setFriendsEx: (params: SetFriendExParams, opid = uuidV4()) =>
-      new Promise<BaseResponse<void>>((resolve, reject) => {
-        openIMSDK.libOpenIMSDK.update_friends(
-          openIMSDK.baseCallbackWrap<void>(resolve, reject),
-          opid,
-          JSON.stringify({
-            friendUserIDs: params.toUserIDs,
-            ex: params.ex,
-          })
-        );
-      }),
-
     getBlackList: (opid = uuidV4()) =>
-      new Promise<BaseResponse<BlackUserItem[]>>((resolve, reject) => {
-        openIMSDK.libOpenIMSDK.get_black_list(
-          openIMSDK.baseCallbackWrap<BlackUserItem[]>(resolve, reject),
+      new Promise<SdkResponse<BlackUserItem[]>>((resolve, reject) => {
+        openIMSdk.nativeSdk.get_black_list(
+          openIMSdk.baseCallbackWrap<BlackUserItem[]>(resolve, reject),
           opid
         );
       }),
 
     getFriendApplicationListAsApplicant: (
-      params: GetFriendApplicationListAsApplicationParams = {
+      params: GetFriendApplicationListAsApplicantParams = {
         offset: 0,
         count: 0,
       },
       opid = uuidV4()
     ) =>
-      new Promise<BaseResponse<FriendApplicationItem[]>>((resolve, reject) => {
-        openIMSDK.libOpenIMSDK.get_friend_application_list_as_applicant(
-          openIMSDK.baseCallbackWrap<FriendApplicationItem[]>(resolve, reject),
+      new Promise<SdkResponse<FriendApplicationItem[]>>((resolve, reject) => {
+        openIMSdk.nativeSdk.get_friend_application_list_as_applicant(
+          openIMSdk.baseCallbackWrap<FriendApplicationItem[]>(resolve, reject),
           opid,
           JSON.stringify(params)
         );
@@ -119,40 +102,40 @@ export function setupFriendModule(openIMSDK: OpenIMSDK) {
       },
       opid = uuidV4()
     ) =>
-      new Promise<BaseResponse<FriendApplicationItem[]>>((resolve, reject) => {
-        openIMSDK.libOpenIMSDK.get_friend_application_list_as_recipient(
-          openIMSDK.baseCallbackWrap<FriendApplicationItem[]>(resolve, reject),
+      new Promise<SdkResponse<FriendApplicationItem[]>>((resolve, reject) => {
+        openIMSdk.nativeSdk.get_friend_application_list_as_recipient(
+          openIMSdk.baseCallbackWrap<FriendApplicationItem[]>(resolve, reject),
           opid,
           JSON.stringify(params)
         );
       }),
     getFriendApplicationUnhandledCount: (
-      params: GetSelfUnhandledApplyCountParams,
+      params: ApplicationUnhandledCountParams,
       opid = uuidV4()
     ) =>
-      new Promise<BaseResponse<number>>((resolve, reject) => {
-        openIMSDK.libOpenIMSDK.get_friend_application_unhandled_count(
-          openIMSDK.baseCallbackWrap<number>(resolve, reject),
+      new Promise<SdkResponse<number>>((resolve, reject) => {
+        openIMSdk.nativeSdk.get_friend_application_unhandled_count(
+          openIMSdk.baseCallbackWrap<number>(resolve, reject),
           opid,
           JSON.stringify(params)
         );
       }),
 
     getFriendList: (filterBlack?: boolean, opid = uuidV4()) =>
-      new Promise<BaseResponse<FriendUserItem[]>>((resolve, reject) => {
-        openIMSDK.libOpenIMSDK.get_friend_list(
-          openIMSDK.baseCallbackWrap<FriendUserItem[]>(resolve, reject),
+      new Promise<SdkResponse<FriendUserItem[]>>((resolve, reject) => {
+        openIMSdk.nativeSdk.get_friend_list(
+          openIMSdk.baseCallbackWrap<FriendUserItem[]>(resolve, reject),
           opid,
           filterBlack ? 1 : 0
         );
       }),
     getFriendListPage: (
-      params: OffsetParams & { filterBlack?: boolean },
+      params: PaginationParams & { filterBlack?: boolean },
       opid = uuidV4()
     ) =>
-      new Promise<BaseResponse<FriendUserItem[]>>((resolve, reject) => {
-        openIMSDK.libOpenIMSDK.get_friend_list_page(
-          openIMSDK.baseCallbackWrap<FriendUserItem[]>(resolve, reject),
+      new Promise<SdkResponse<FriendUserItem[]>>((resolve, reject) => {
+        openIMSdk.nativeSdk.get_friend_list_page(
+          openIMSdk.baseCallbackWrap<FriendUserItem[]>(resolve, reject),
           opid,
           params.offset,
           params.count,
@@ -161,9 +144,9 @@ export function setupFriendModule(openIMSDK: OpenIMSDK) {
       }),
 
     updateFriends: (params: UpdateFriendsParams, opid = uuidV4()) =>
-      new Promise<BaseResponse<void>>((resolve, reject) => {
-        openIMSDK.libOpenIMSDK.update_friends(
-          openIMSDK.baseCallbackWrap<void>(resolve, reject),
+      new Promise<SdkResponse<void>>((resolve, reject) => {
+        openIMSdk.nativeSdk.update_friends(
+          openIMSdk.baseCallbackWrap<void>(resolve, reject),
           opid,
           JSON.stringify(params)
         );
@@ -173,9 +156,9 @@ export function setupFriendModule(openIMSDK: OpenIMSDK) {
       params: GetSpecifiedFriendsParams,
       opid = uuidV4()
     ) =>
-      new Promise<BaseResponse<FriendUserItem[]>>((resolve, reject) => {
-        openIMSDK.libOpenIMSDK.get_specified_friends_info(
-          openIMSDK.baseCallbackWrap<FriendUserItem[]>(resolve, reject),
+      new Promise<SdkResponse<FriendUserItem[]>>((resolve, reject) => {
+        openIMSdk.nativeSdk.get_specified_friends_info(
+          openIMSdk.baseCallbackWrap<FriendUserItem[]>(resolve, reject),
           opid,
           JSON.stringify(params.friendUserIDList),
           params.filterBlack ? 1 : 0
@@ -183,56 +166,35 @@ export function setupFriendModule(openIMSDK: OpenIMSDK) {
       }),
 
     refuseFriendApplication: (
-      params: AccessFriendApplicationParams,
+      params: HandleFriendApplicationParams,
       opid = uuidV4()
     ) =>
-      new Promise<BaseResponse<void>>((resolve, reject) => {
-        openIMSDK.libOpenIMSDK.refuse_friend_application(
-          openIMSDK.baseCallbackWrap<void>(resolve, reject),
+      new Promise<SdkResponse<void>>((resolve, reject) => {
+        openIMSdk.nativeSdk.refuse_friend_application(
+          openIMSdk.baseCallbackWrap<void>(resolve, reject),
           opid,
           JSON.stringify(params)
         );
       }),
 
     removeBlack: (userID: string, opid = uuidV4()) =>
-      new Promise<BaseResponse<void>>((resolve, reject) => {
-        openIMSDK.libOpenIMSDK.remove_black(
-          openIMSDK.baseCallbackWrap<void>(resolve, reject),
+      new Promise<SdkResponse<void>>((resolve, reject) => {
+        openIMSdk.nativeSdk.remove_black(
+          openIMSdk.baseCallbackWrap<void>(resolve, reject),
           opid,
           userID
         );
       }),
 
-    searchFriends: (params: SearchFriendParams, opid = uuidV4()) =>
-      new Promise<BaseResponse<SearchedFriendsInfo[]>>((resolve, reject) => {
-        openIMSDK.libOpenIMSDK.search_friends(
-          openIMSDK.baseCallbackWrap<SearchedFriendsInfo[]>(resolve, reject),
+    searchFriends: (params: SearchFriendsParams, opid = uuidV4()) =>
+      new Promise<SdkResponse<SearchFriendsResultItem[]>>((resolve, reject) => {
+        openIMSdk.nativeSdk.search_friends(
+          openIMSdk.baseCallbackWrap<SearchFriendsResultItem[]>(
+            resolve,
+            reject
+          ),
           opid,
           JSON.stringify(params)
-        );
-      }),
-
-    setFriendRemark: (params: RemarkFriendParams, opid = uuidV4()) =>
-      new Promise<BaseResponse<void>>((resolve, reject) => {
-        openIMSDK.libOpenIMSDK.update_friends(
-          openIMSDK.baseCallbackWrap<void>(resolve, reject),
-          opid,
-          JSON.stringify({
-            friendUserIDs: [params.toUserID],
-            remark: params.remark,
-          })
-        );
-      }),
-
-    pinFriends: (params: PinFriendParams, opid = uuidV4()) =>
-      new Promise<BaseResponse<void>>((resolve, reject) => {
-        openIMSDK.libOpenIMSDK.update_friends(
-          openIMSDK.baseCallbackWrap<void>(resolve, reject),
-          opid,
-          JSON.stringify({
-            friendUserIDs: params.toUserIDs,
-            isPinned: params.isPinned,
-          })
         );
       }),
   };
@@ -240,60 +202,58 @@ export function setupFriendModule(openIMSDK: OpenIMSDK) {
 
 export interface FriendModuleApi {
   acceptFriendApplication: (
-    params: AccessFriendApplicationParams,
+    params: HandleFriendApplicationParams,
     opid?: string
-  ) => Promise<BaseResponse<void>>;
-  addBlack: (userID: string, opid?: string) => Promise<BaseResponse<void>>;
-  addFriend: (userID: string, opid?: string) => Promise<BaseResponse<void>>;
+  ) => Promise<SdkResponse<void>>;
+  addBlack: (
+    params: AddBlackParams,
+    opid?: string
+  ) => Promise<SdkResponse<void>>;
+  addFriend: (
+    params: AddFriendParams,
+    opid?: string
+  ) => Promise<SdkResponse<void>>;
   checkFriend: (
     userIDList: string[],
     opid?: string
-  ) => Promise<BaseResponse<FriendshipInfo[]>>;
-  deleteFriend: (userID: string, opid?: string) => Promise<BaseResponse<void>>;
-  setFriendsEx: (
-    params: SetFriendExParams,
-    opid?: string
-  ) => Promise<BaseResponse<void>>;
-  getBlackList: (opid?: string) => Promise<BaseResponse<BlackUserItem[]>>;
+  ) => Promise<SdkResponse<CheckFriendResultItem[]>>;
+  deleteFriend: (userID: string, opid?: string) => Promise<SdkResponse<void>>;
+  getBlackList: (opid?: string) => Promise<SdkResponse<BlackUserItem[]>>;
   getFriendApplicationListAsApplicant: (
-    params: GetFriendApplicationListAsApplicationParams,
+    params?: GetFriendApplicationListAsApplicantParams,
     opid?: string
-  ) => Promise<BaseResponse<FriendApplicationItem[]>>;
+  ) => Promise<SdkResponse<FriendApplicationItem[]>>;
   getFriendApplicationListAsRecipient: (
-    params: GetFriendApplicationListAsRecipientParams,
+    params?: GetFriendApplicationListAsRecipientParams,
     opid?: string
-  ) => Promise<BaseResponse<FriendApplicationItem[]>>;
+  ) => Promise<SdkResponse<FriendApplicationItem[]>>;
   getFriendApplicationUnhandledCount: (
-    params: GetSelfUnhandledApplyCountParams,
+    params: ApplicationUnhandledCountParams,
     opid?: string
-  ) => Promise<BaseResponse<number>>;
+  ) => Promise<SdkResponse<number>>;
   getFriendList: (
     filterBlack?: boolean,
     opid?: string
-  ) => Promise<BaseResponse<FriendUserItem[]>>;
+  ) => Promise<SdkResponse<FriendUserItem[]>>;
   getFriendListPage: (
-    params: OffsetParams & { filterBlack?: boolean },
+    params: PaginationParams & { filterBlack?: boolean },
     opid?: string
-  ) => Promise<BaseResponse<FriendUserItem[]>>;
+  ) => Promise<SdkResponse<FriendUserItem[]>>;
   updateFriends: (
     params: UpdateFriendsParams,
     opid?: string
-  ) => Promise<BaseResponse<void>>;
+  ) => Promise<SdkResponse<void>>;
   getSpecifiedFriendsInfo: (
     params: GetSpecifiedFriendsParams,
     opid?: string
-  ) => Promise<BaseResponse<FriendUserItem[]>>;
+  ) => Promise<SdkResponse<FriendUserItem[]>>;
   refuseFriendApplication: (
-    params: AccessFriendApplicationParams,
+    params: HandleFriendApplicationParams,
     opid?: string
-  ) => Promise<BaseResponse<void>>;
-  removeBlack: (userID: string, opid?: string) => Promise<BaseResponse<void>>;
+  ) => Promise<SdkResponse<void>>;
+  removeBlack: (userID: string, opid?: string) => Promise<SdkResponse<void>>;
   searchFriends: (
-    params: SearchFriendParams,
+    params: SearchFriendsParams,
     opid?: string
-  ) => Promise<BaseResponse<SearchedFriendsInfo[]>>;
-  setFriendRemark: (
-    params: RemarkFriendParams,
-    opid?: string
-  ) => Promise<BaseResponse<void>>;
+  ) => Promise<SdkResponse<SearchFriendsResultItem[]>>;
 }

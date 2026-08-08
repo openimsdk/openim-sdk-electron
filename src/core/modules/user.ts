@@ -1,107 +1,101 @@
-import { v4 as uuidV4 } from 'uuid';
-import { BaseResponse } from '@/types/entity';
-import OpenIMSDK from '..';
-import { MessageReceiveOptType } from '@openim/wasm-client-sdk';
+import { uuidV4 } from '@/utils/uuid';
+import { SdkResponse } from '@/types/entity';
+import OpenIMSdk from '..';
 import {
+  SetSelfInfoParams,
   SelfUserInfo,
   UserOnlineState,
   PublicUserItem,
-} from '@openim/wasm-client-sdk/lib/types/entity';
-import { PartialUserItem } from '@openim/wasm-client-sdk/lib/types/params';
+} from '@openim/wasm-client-sdk';
 
-export function setupUserModule(openIMSDK: OpenIMSDK) {
+export function setupUserModule(openIMSdk: OpenIMSdk) {
   return {
     getSelfUserInfo: (opid = uuidV4()) =>
-      new Promise<BaseResponse<SelfUserInfo>>((resolve, reject) => {
-        openIMSDK.libOpenIMSDK.get_self_user_info(
-          openIMSDK.baseCallbackWrap<SelfUserInfo>(resolve, reject),
+      new Promise<SdkResponse<SelfUserInfo>>((resolve, reject) => {
+        openIMSdk.nativeSdk.get_self_user_info(
+          openIMSdk.baseCallbackWrap<SelfUserInfo>(resolve, reject),
           opid
         );
       }),
 
-    setSelfInfo: (params: PartialUserItem, opid = uuidV4()) =>
-      new Promise<BaseResponse<void>>((resolve, reject) => {
-        openIMSDK.libOpenIMSDK.set_self_info(
-          openIMSDK.baseCallbackWrap<void>(resolve, reject),
+    setSelfInfo: (params: SetSelfInfoParams, opid = uuidV4()) =>
+      new Promise<SdkResponse<void>>((resolve, reject) => {
+        openIMSdk.nativeSdk.set_self_info(
+          openIMSdk.baseCallbackWrap<void>(resolve, reject),
           opid,
           JSON.stringify(params)
         );
       }),
 
     getUsersInfo: (params: string[], opid = uuidV4()) =>
-      new Promise<BaseResponse<PublicUserItem[]>>((resolve, reject) => {
-        openIMSDK.libOpenIMSDK.get_users_info(
-          openIMSDK.baseCallbackWrap<PublicUserItem[]>(resolve, reject),
+      new Promise<SdkResponse<PublicUserItem[]>>((resolve, reject) => {
+        openIMSdk.nativeSdk.get_users_info(
+          openIMSdk.baseCallbackWrap<PublicUserItem[]>(resolve, reject),
           opid,
           JSON.stringify(params)
         );
       }),
 
     subscribeUsersStatus: (userIDList: string[], opid = uuidV4()) =>
-      new Promise<BaseResponse<UserOnlineState>>((resolve, reject) => {
-        openIMSDK.libOpenIMSDK.subscribe_users_status(
-          openIMSDK.baseCallbackWrap<UserOnlineState>(resolve, reject),
+      new Promise<SdkResponse<UserOnlineState[]>>((resolve, reject) => {
+        openIMSdk.nativeSdk.subscribe_users_status(
+          openIMSdk.baseCallbackWrap<UserOnlineState[]>(resolve, reject),
           opid,
           JSON.stringify(userIDList)
         );
       }),
 
     unsubscribeUsersStatus: (userIDList: string[], opid = uuidV4()) =>
-      new Promise<BaseResponse<void>>((resolve, reject) => {
-        openIMSDK.libOpenIMSDK.unsubscribe_users_status(
-          openIMSDK.baseCallbackWrap<void>(resolve, reject),
+      new Promise<SdkResponse<UserOnlineState[]>>((resolve, reject) => {
+        openIMSdk.nativeSdk.unsubscribe_users_status(
+          openIMSdk.baseCallbackWrap<UserOnlineState[]>(resolve, reject),
           opid,
           JSON.stringify(userIDList)
         );
       }),
 
     getSubscribeUsersStatus: (opid = uuidV4()) =>
-      new Promise<BaseResponse<UserOnlineState[]>>((resolve, reject) => {
-        openIMSDK.libOpenIMSDK.get_subscribe_users_status(
-          openIMSDK.baseCallbackWrap<UserOnlineState[]>(resolve, reject),
+      new Promise<SdkResponse<UserOnlineState[]>>((resolve, reject) => {
+        openIMSdk.nativeSdk.get_subscribe_users_status(
+          openIMSdk.baseCallbackWrap<UserOnlineState[]>(resolve, reject),
           opid
         );
       }),
 
-    setGlobalRecvMessageOpt: (
-      msgReceiveOptType: MessageReceiveOptType,
-      opid = uuidV4()
-    ) =>
-      new Promise<BaseResponse<void>>((resolve, reject) => {
-        openIMSDK.libOpenIMSDK.set_self_info(
-          openIMSDK.baseCallbackWrap<void>(resolve, reject),
+    getUserStatus: (userIDList: string[], opid = uuidV4()) =>
+      new Promise<SdkResponse<UserOnlineState[]>>((resolve, reject) => {
+        openIMSdk.nativeSdk.get_user_status(
+          openIMSdk.baseCallbackWrap<UserOnlineState[]>(resolve, reject),
           opid,
-          JSON.stringify({
-            globalRecvMsgOpt: msgReceiveOptType,
-          })
+          JSON.stringify(userIDList)
         );
       }),
   };
 }
 
 export interface UserModuleApi {
-  getSelfUserInfo: (opid?: string) => Promise<BaseResponse<SelfUserInfo>>;
+  getSelfUserInfo: (opid?: string) => Promise<SdkResponse<SelfUserInfo>>;
   setSelfInfo: (
-    params: PartialUserItem,
+    params: SetSelfInfoParams,
     opid?: string
-  ) => Promise<BaseResponse<void>>;
+  ) => Promise<SdkResponse<void>>;
   getUsersInfo: (
     params: string[],
     opid?: string
-  ) => Promise<BaseResponse<PublicUserItem[]>>;
+  ) => Promise<SdkResponse<PublicUserItem[]>>;
   subscribeUsersStatus: (
     userIDList: string[],
     opid?: string
-  ) => Promise<BaseResponse<UserOnlineState>>;
+  ) => Promise<SdkResponse<UserOnlineState[]>>;
   unsubscribeUsersStatus: (
     userIDList: string[],
     opid?: string
-  ) => Promise<BaseResponse<void>>;
+  ) => Promise<SdkResponse<UserOnlineState[]>>;
   getSubscribeUsersStatus: (
     opid?: string
-  ) => Promise<BaseResponse<UserOnlineState[]>>;
-  setGlobalRecvMessageOpt: (
-    msgReceiveOptType: MessageReceiveOptType,
+  ) => Promise<SdkResponse<UserOnlineState[]>>;
+  getUserStatus: (
+    userIDList: string[],
     opid?: string
-  ) => Promise<BaseResponse<void>>;
+  ) => Promise<SdkResponse<UserOnlineState[]>>;
 }

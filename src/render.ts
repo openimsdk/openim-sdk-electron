@@ -1,44 +1,68 @@
-import { CbEvents, getSDK as WasmGetSDK } from '@openim/wasm-client-sdk';
 import {
-  MessageItem,
-  WsResponse,
-} from '@openim/wasm-client-sdk/lib/types/entity';
-import {
+  getSDK as getWasmSdk,
+  LoginParams,
+  SdkEvent,
+  SdkResponse,
   WasmPathConfig,
-  InitAndLoginConfig,
-} from '@openim/wasm-client-sdk/lib/types/params';
+} from '@openim/wasm-client-sdk';
 import Emitter from './utils/emitter';
 import {
   InitConfig,
-  FileMsgByPathParams,
-  SoundMsgByPathParams,
-  VideoMsgByPathParams,
   UploadLogsParams,
-  DebugLogsParams,
-  ErrorLogsParams,
+  LogErrorParams,
+  LogMessageParams,
 } from './types/params';
+export {
+  type InitConfig,
+  type LogErrorParams,
+  type LogMessageParams,
+  type UploadLogsParams,
+};
+export type { OpenIMRenderBridge } from './types/global';
+import './types/global';
 
-type EmitterEvents = {
-  [key in CbEvents]: any;
+type SdkEventMap = {
+  [key in SdkEvent]: unknown;
 };
 
 export type SdkEventLogSource = 'clib-render' | 'wasm-render';
 
 export type SdkEventLogEntry = {
-  event: CbEvents;
+  event: SdkEvent;
   source: SdkEventLogSource;
   payload: unknown;
 };
 
 export type SdkEventLogHandler = (entry: SdkEventLogEntry) => void;
 
-type WasmInterface = ReturnType<typeof WasmGetSDK>;
+export type ElectronLoginParams = Pick<LoginParams, 'userID' | 'token'> &
+  Partial<Omit<LoginParams, 'userID' | 'token'>>;
 
-export type IMSDKInterface = Omit<WasmInterface, 'login'> & {
+type WasmSdk = ReturnType<typeof getWasmSdk>;
+
+const ELECTRON_NATIVE_UNSUPPORTED_METHOD_NAMES = [
+  'createImageMessageByFile',
+  'createVideoMessageByFile',
+  'createSoundMessageByFile',
+  'createFileMessageByFile',
+  'fileMapSet',
+  'exportDB',
+  'markMessagesAsReadByMsgID',
+] as const;
+type ElectronNativeUnsupportedMethodName =
+  (typeof ELECTRON_NATIVE_UNSUPPORTED_METHOD_NAMES)[number];
+const ELECTRON_NATIVE_UNSUPPORTED_METHODS = new Set<string>(
+  ELECTRON_NATIVE_UNSUPPORTED_METHOD_NAMES
+);
+
+export type OpenIMClientSdk = Omit<
+  WasmSdk,
+  'login' | ElectronNativeUnsupportedMethodName
+> & {
   login: (
-    params: Partial<InitAndLoginConfig>,
+    params: ElectronLoginParams,
     operationID?: string
-  ) => Promise<WsResponse>;
+  ) => Promise<SdkResponse>;
   /**
    * @access only for electron
    */
@@ -46,106 +70,51 @@ export type IMSDKInterface = Omit<WasmInterface, 'login'> & {
   /**
    * @access only for electron
    */
-  unInitSDK: (opid?: string) => Promise<void>;
-  /**
-   * @access only for electron
-   */
-  createImageMessage: (
-    imagePath: string,
-    opid?: string
-  ) => Promise<WsResponse<MessageItem>>;
-  /**
-   * @access only for electron
-   */
-  createImageMessageFromFullPath: (
-    imagePath: string,
-    opid?: string
-  ) => Promise<WsResponse<MessageItem>>;
-  /**
-   * @access only for electron
-   */
-  createVideoMessage: (
-    params: VideoMsgByPathParams,
-    opid?: string
-  ) => Promise<WsResponse<MessageItem>>;
-  /**
-   * @access only for electron
-   */
-  createVideoMessageFromFullPath: (
-    params: VideoMsgByPathParams,
-    opid?: string
-  ) => Promise<WsResponse<MessageItem>>;
-  /**
-   * @access only for electron
-   */
-  createSoundMessage: (
-    params: SoundMsgByPathParams,
-    opid?: string
-  ) => Promise<WsResponse<MessageItem>>;
-  /**
-   * @access only for electron
-   */
-  createSoundMessageFromFullPath: (
-    params: SoundMsgByPathParams,
-    opid?: string
-  ) => Promise<WsResponse<MessageItem>>;
-  /**
-   * @access only for electron
-   */
-  createFileMessage: (
-    params: FileMsgByPathParams,
-    opid?: string
-  ) => Promise<WsResponse<MessageItem>>;
-  /**
-   * @access only for electron
-   */
-  createFileMessageFromFullPath: (
-    params: FileMsgByPathParams,
-    opid?: string
-  ) => Promise<WsResponse<MessageItem>>;
+  unInitSDK: (opid?: string) => Promise<SdkResponse<void>>;
   /**
    * @access only for electron
    */
   uploadLogs: (
     params: UploadLogsParams,
     opid?: string
-  ) => Promise<WsResponse<unknown>>;
-  getGroupApplicationBadgeCount: (opid?: string) => Promise<WsResponse<number>>;
-  clearGroupApplicationBadgeCount: (opid?: string) => Promise<WsResponse<void>>;
+  ) => Promise<SdkResponse<void>>;
   /**
    * @access only for electron
    */
   verboseLogs: (
-    params: DebugLogsParams,
+    params: LogMessageParams,
     opid?: string
-  ) => Promise<WsResponse<unknown>>;
+  ) => Promise<SdkResponse<void>>;
   debugLogs: (
-    params: DebugLogsParams,
+    params: LogMessageParams,
     opid?: string
-  ) => Promise<WsResponse<unknown>>;
+  ) => Promise<SdkResponse<void>>;
   infoLogs: (
-    params: DebugLogsParams,
+    params: LogMessageParams,
     opid?: string
-  ) => Promise<WsResponse<unknown>>;
+  ) => Promise<SdkResponse<void>>;
   warnLogs: (
-    params: ErrorLogsParams,
+    params: LogErrorParams,
     opid?: string
-  ) => Promise<WsResponse<unknown>>;
+  ) => Promise<SdkResponse<void>>;
   errorLogs: (
-    params: ErrorLogsParams,
+    params: LogErrorParams,
     opid?: string
-  ) => Promise<WsResponse<unknown>>;
+  ) => Promise<SdkResponse<void>>;
   fatalLogs: (
-    params: ErrorLogsParams,
+    params: LogErrorParams,
     opid?: string
-  ) => Promise<WsResponse<unknown>>;
+  ) => Promise<SdkResponse<void>>;
   panicLogs: (
-    params: ErrorLogsParams,
+    params: LogErrorParams,
     opid?: string
-  ) => Promise<WsResponse<unknown>>;
+  ) => Promise<SdkResponse<void>>;
 };
 
-type ElectronInvoke = (method: string, ...args: any[]) => Promise<WsResponse>;
+/** @deprecated Use `OpenIMClientSdk` instead. */
+export type IMSDKInterface = OpenIMClientSdk;
+
+type ElectronInvoke = (method: string, ...args: any[]) => Promise<SdkResponse>;
 
 type CreateElectronOptions = {
   wasmConfig?: WasmPathConfig;
@@ -153,24 +122,24 @@ type CreateElectronOptions = {
   onSdkEventLog?: SdkEventLogHandler;
 };
 
-let wasmSDK: IMSDKInterface | undefined;
-let instance: IMSDKInterface | undefined;
+let wasmSdk: OpenIMClientSdk | undefined;
+let instance: OpenIMClientSdk | undefined;
 const sdkEmitter = new Emitter();
 let sdkEventLogHandler: SdkEventLogHandler | undefined;
 
 // eslint-disable-next-line
 const methodCache = new WeakMap<Function, any>();
 
-const CB_EVENT_VALUES = new Set<string>(
-  Object.values(CbEvents) as unknown as string[]
+const SDK_EVENT_VALUES = new Set<string>(
+  Object.values(SdkEvent) as unknown as string[]
 );
 
 type EventPayloadEmitter = {
-  emit: (event: CbEvents, data: unknown) => unknown;
+  emit: (event: SdkEvent, data: unknown) => unknown;
 };
 
 const notifySdkEventLog = (
-  event: CbEvents,
+  event: SdkEvent,
   data: unknown,
   source: SdkEventLogSource
 ) => {
@@ -189,7 +158,7 @@ const notifySdkEventLog = (
   }
 };
 
-const wrapWasmEventEmitter = (sdk: IMSDKInterface) => {
+const wrapWasmEventEmitter = (sdk: OpenIMClientSdk) => {
   const emitter = sdk as unknown as EventPayloadEmitter & {
     __sdkEventLogWrapped__?: boolean;
   };
@@ -199,8 +168,8 @@ const wrapWasmEventEmitter = (sdk: IMSDKInterface) => {
   }
 
   const rawEmit = emitter.emit.bind(emitter);
-  emitter.emit = ((event: CbEvents, data: unknown) => {
-    if (CB_EVENT_VALUES.has(String(event))) {
+  emitter.emit = ((event: SdkEvent, data: unknown) => {
+    if (SDK_EVENT_VALUES.has(String(event))) {
       notifySdkEventLog(event, data, 'wasm-render');
     }
 
@@ -209,11 +178,11 @@ const wrapWasmEventEmitter = (sdk: IMSDKInterface) => {
   emitter.__sdkEventLogWrapped__ = true;
 };
 
-async function createWasmSDK(wasmConfig?: WasmPathConfig): Promise<void> {
-  if (!wasmSDK) {
+async function createWasmSdk(wasmConfig?: WasmPathConfig): Promise<void> {
+  if (!wasmSdk) {
     const { getSDK } = await import('@openim/wasm-client-sdk');
-    wasmSDK = getSDK(wasmConfig) as unknown as IMSDKInterface;
-    wrapWasmEventEmitter(wasmSDK);
+    wasmSdk = getSDK(wasmConfig) as unknown as OpenIMClientSdk;
+    wrapWasmEventEmitter(wasmSdk);
   }
 }
 
@@ -223,8 +192,8 @@ export function getWithRenderProcess(options: CreateElectronOptions = {}) {
     sdkEventLogHandler = options.onSdkEventLog;
   }
 
-  const interalInvoke = invoke ?? window.openIMRenderApi?.imMethodsInvoke;
-  const subscribeCallback = (event: keyof EmitterEvents, data: any) => {
+  const internalInvoke = invoke ?? window.openIMRenderBridge?.invokeSdkMethod;
+  const subscribeCallback = (event: keyof SdkEventMap, data: unknown) => {
     notifySdkEventLog(event, data, 'clib-render');
     return sdkEmitter.emit(event, data);
   };
@@ -236,51 +205,64 @@ export function getWithRenderProcess(options: CreateElectronOptions = {}) {
     };
   }
 
-  if (!interalInvoke && !wasmSDK) {
-    createWasmSDK(wasmConfig);
+  if (!internalInvoke && !wasmSdk) {
+    createWasmSdk(wasmConfig);
   }
 
-  window.openIMRenderApi?.subscribe('openim-sdk-ipc-event', subscribeCallback);
+  window.openIMRenderBridge?.subscribe(
+    'openim-sdk-ipc-event',
+    subscribeCallback
+  );
 
-  const sdkProxyHandler: ProxyHandler<IMSDKInterface> = {
-    get(_, prop: keyof IMSDKInterface) {
+  const sdkProxyHandler: ProxyHandler<OpenIMClientSdk> = {
+    get(_, prop) {
+      if (
+        typeof prop !== 'string' ||
+        ELECTRON_NATIVE_UNSUPPORTED_METHODS.has(prop)
+      ) {
+        return undefined;
+      }
+      const methodName = prop as keyof OpenIMClientSdk;
       return async (...args: any[]) => {
         try {
-          if (!interalInvoke) {
-            if (!wasmSDK) {
-              await createWasmSDK(wasmConfig);
+          if (!internalInvoke) {
+            if (!wasmSdk) {
+              await createWasmSdk(wasmConfig);
             }
-            const cachedMethod = methodCache.get(wasmSDK![prop]);
+            const wasmMethod = wasmSdk![methodName] as unknown as (
+              ...methodArgs: any[]
+            ) => unknown;
+            const cachedMethod = methodCache.get(wasmMethod);
             if (cachedMethod) {
               // eslint-disable-next-line
               return cachedMethod(...args);
             }
-            // @ts-ignore
             // eslint-disable-next-line
-            const method = async (...args: any[]) => wasmSDK![prop](...args);
-            methodCache.set(wasmSDK![prop], method);
+            const method = async (...args: any[]) =>
+              wasmMethod.apply(wasmSdk, args);
+            methodCache.set(wasmMethod, method);
             return method(...args);
           }
 
-          if (prop === 'on' || prop === 'off') {
+          if (methodName === 'on' || methodName === 'off') {
             // @ts-ignore
-            return sdkEmitter[prop](...args);
+            return sdkEmitter[methodName](...args);
           }
 
-          const result = await interalInvoke(prop, ...args);
-          if (result?.errCode !== 0 && prop !== 'initSDK') {
+          const result = await internalInvoke(methodName, ...args);
+          if (result?.errCode !== 0 && methodName !== 'initSDK') {
             throw result;
           }
           return result;
         } catch (error) {
-          console.error(`Error invoking ${prop}:`, error);
+          console.error(`Error invoking ${methodName}:`, error);
           throw error;
         }
       };
     },
   };
 
-  instance = new Proxy({} as IMSDKInterface, sdkProxyHandler);
+  instance = new Proxy({} as OpenIMClientSdk, sdkProxyHandler);
 
   return { instance, subscribeCallback };
 }

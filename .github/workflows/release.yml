@@ -5,36 +5,241 @@ on:
     tags:
       - 'v*'
   workflow_dispatch:
+    inputs:
+      cpp_ref:
+        description: Optional openim-sdk-cpp tag, branch, or commit; defaults to v3.8.3-patch.15
+        required: false
+        type: string
+        default: ''
+      wasm_ref:
+        description: Optional openim-sdk-js-wasm tag, branch, or commit; defaults to the Electron package version tag
+        required: false
+        type: string
+        default: ''
+
+permissions:
+  contents: read
+
+concurrency:
+  group: electron-release-${{ github.ref }}
+  cancel-in-progress: false
 
 jobs:
-  release:
-    name: Release
-    runs-on: ubuntu-latest
-
+  resolve:
+    name: Resolve and validate release inputs
+    runs-on: ubuntu-24.04
+    outputs:
+      cpp_ref: ${{ steps.refs.outputs.cpp_ref }}
+      wasm_ref: ${{ steps.refs.outputs.wasm_ref }}
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v2
+      - name: Check out Electron SDK
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
 
       - name: Set up Node.js
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: 22
 
-      - name: Install dependencies
-        run: npm install
+      - name: Resolve and validate dependency refs
+        id: refs
+        shell: bash
+        env:
+          CPP_REF_INPUT: ${{ inputs.cpp_ref }}
+          WASM_REF_INPUT: ${{ inputs.wasm_ref }}
+        run: |
+          package_version="$(node -p "require('./package.json').version")"
+          wasm_version="$(node -p "require('./package.json').devDependencies['@openim/wasm-client-sdk']")"
+          native_version="$(tr -d '[:space:]' < assets/version)"
+          expected_tag="v${package_version}"
+          cpp_ref="${CPP_REF_INPUT:-v3.8.3-patch.15}"
+          wasm_ref="${WASM_REF_INPUT:-v${wasm_version}}"
 
-      - name: Build
+          if [[ "${package_version}" != "${wasm_version}" ]]; then
+            echo "Electron ${package_version} must build against the exact WASM development version; found ${wasm_version}." >&2
+            exit 1
+          fi
+          if [[ -z "${native_version}" || "${native_version}" != v* ]]; then
+            echo "assets/version must contain an exact v-prefixed native SDK version." >&2
+            exit 1
+          fi
+          if [[ "${GITHUB_EVENT_NAME}" == "push" ]]; then
+            if [[ "${GITHUB_REF_NAME}" != "${expected_tag}" ]]; then
+              echo "Release tag ${GITHUB_REF_NAME} does not match package version ${expected_tag}." >&2
+              exit 1
+            fi
+            if [[ "${wasm_ref}" != "${expected_tag}" ]]; then
+              echo "Tag releases must consume the matching WASM tag ${expected_tag}; found ${wasm_ref}." >&2
+              exit 1
+            fi
+          fi
+
+          echo "cpp_ref=${cpp_ref}" >> "${GITHUB_OUTPUT}"
+          echo "wasm_ref=${wasm_ref}" >> "${GITHUB_OUTPUT}"
+          echo "Building Electron ${package_version} with C++ ${cpp_ref} and WASM ${wasm_ref}."
+
+      - name: Check out matching WASM SDK for preflight
+        uses: actions/checkout@v4
+        with:
+          repository: OpenIMSDK/openim-sdk-js-wasm
+          ref: ${{ steps.refs.outputs.wasm_ref }}
+          path: .ci/wasm
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: Verify matching WASM release is available
+        shell: bash
+        run: |
+          package_name="$(node -p "require('./.ci/wasm/package.json').name")"
+          wasm_version="$(node -p "require('./.ci/wasm/package.json').version")"
+          expected_version="$(node -p "require('./package.json').devDependencies['@openim/wasm-client-sdk']")"
+
+          if [[ "${wasm_version}" != "${expected_version}" ]]; then
+            echo "WASM ref contains ${wasm_version}; Electron requires ${expected_version}." >&2
+            exit 1
+          fi
+          if [[ "${GITHUB_EVENT_NAME}" == "push" ]]; then
+            published_version="$(npm view "${package_name}@${wasm_version}" version 2>/dev/null || true)"
+            if [[ "${published_version}" != "${wasm_version}" ]]; then
+              echo "${package_name}@${wasm_version} must be published before the Electron release." >&2
+              exit 1
+            fi
+          fi
+
+  native:
+    name: Build five native platforms
+    needs: resolve
+    uses: OpenIMSDK/openim-sdk-cpp/.github/workflows/client-sdk-native.yml@v3.8.3-patch.15
+    with:
+      cpp_ref: ${{ needs.resolve.outputs.cpp_ref }}
+
+  release:
+    name: Verify and publish Electron SDK
+    needs:
+      - resolve
+      - native
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - name: Check out Electron SDK
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Check out matching WASM SDK
+        uses: actions/checkout@v4
+        with:
+          repository: OpenIMSDK/openim-sdk-js-wasm
+          ref: ${{ needs.resolve.outputs.wasm_ref }}
+          path: .ci/wasm
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            .ci/wasm/package-lock.json
+          registry-url: https://registry.npmjs.org
+
+      - name: Validate matching WASM package
+        shell: bash
+        run: |
+          expected_version="$(node -p "require('./package.json').devDependencies['@openim/wasm-client-sdk']")"
+          wasm_version="$(node -p "require('./.ci/wasm/package.json').version")"
+          if [[ "${wasm_version}" != "${expected_version}" ]]; then
+            echo "Checked-out WASM version ${wasm_version} does not match ${expected_version}." >&2
+            exit 1
+          fi
+
+      - name: Download native libraries
+        uses: actions/download-artifact@v4
+        with:
+          pattern: openim-native-*
+          path: native-artifacts
+
+      - name: Install verified native assets
+        run: node scripts/install-native-artifacts.mjs native-artifacts
+
+      - name: Build matching WASM SDK types
+        run: |
+          npm ci --prefix .ci/wasm --ignore-scripts
+          npm run --prefix .ci/wasm build
+
+      - name: Install Electron dependencies
+        env:
+          ELECTRON_MIRROR: https://npmmirror.com/mirrors/electron/
+        run: npm ci
+
+      - name: Link matching WASM SDK
+        run: npm install --no-save --package-lock=false --ignore-scripts ./.ci/wasm
+
+      - name: Verify source and ABI contracts
+        env:
+          OPENIM_NATIVE_HEADER: native-artifacts/openim-native-linux_x64/libopenimsdk.h
+        run: npm run verify
+
+      - name: Build package
         run: npm run build
 
-      - name: Authenticate with npm registry
-        run: npm config set //registry.npmjs.org/:_authToken=${{ secrets.NPM_TOKEN }}
+      - name: Verify package consumer types
+        run: npm run test:consumer
 
-      - name: Config npm
-        run: echo "//registry.npmjs.org/:_authToken=${NPM_TOKEN}" > .npmrc
-        env:
-          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+      - name: Verify Electron render runtime surface
+        run: npm run test:render-surface
 
-      - name: Publish
+      - name: Smoke-test the Linux native library in Electron
+        run: xvfb-run -a npm run test:native-smoke -- assets/linux_x64/libopenimsdk.so
+
+      - name: Verify packed package
+        run: npm run test:package
+
+      - name: Check whether the package version is already published
+        id: npm-package
+        if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
+        shell: bash
+        run: |
+          package_name="$(node -p "require('./package.json').name")"
+          package_version="$(node -p "require('./package.json').version")"
+
+          if published_version="$(npm view "${package_name}@${package_version}" version 2>/dev/null)"; then
+            if [[ "${published_version}" != "${package_version}" ]]; then
+              echo "Registry returned unexpected version: ${published_version}" >&2
+              exit 1
+            fi
+            echo "published=true" >> "${GITHUB_OUTPUT}"
+            echo "${package_name}@${package_version} is already published; skipping duplicate publish."
+          else
+            echo "published=false" >> "${GITHUB_OUTPUT}"
+          fi
+
+      - name: Publish to npm
+        if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v') && steps.npm-package.outputs.published != 'true'
         env:
-          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
-        run: npm publish -r --access public --no-git-checks
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: npm publish --access public --tag latest --no-git-checks
+
+      - name: Verify published package
+        if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
+        shell: bash
+        run: |
+          package_name="$(node -p "require('./package.json').name")"
+          package_version="$(node -p "require('./package.json').version")"
+
+          for attempt in 1 2 3 4 5; do
+            published_version="$(npm view "${package_name}@${package_version}" version 2>/dev/null || true)"
+            if [[ "${published_version}" == "${package_version}" ]]; then
+              echo "Verified ${package_name}@${package_version} on npm."
+              exit 0
+            fi
+            if [[ "${attempt}" -lt 5 ]]; then
+              sleep 5
+            fi
+          done
+
+          echo "Could not verify ${package_name}@${package_version} on npm." >&2
+          exit 1

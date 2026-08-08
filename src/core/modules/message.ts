@@ -1,65 +1,87 @@
-import { v4 as uuidV4 } from 'uuid';
-import OpenIMSDK from '..';
-import { BaseResponse } from '@/types/entity';
+import { uuidV4 } from '@/utils/uuid';
+import OpenIMSdk from '..';
+import { SdkResponse } from '@/types/entity';
 import {
   MessageItem,
   CardElem,
-  AdvancedGetMessageResult,
-} from '@openim/wasm-client-sdk/lib/types/entity';
-import {
-  AtMsgParams,
-  LocationMsgParams,
-  CustomMsgParams,
-  QuoteMsgParams,
-  MergerMsgParams,
-  FaceMessageParams,
-  SendMsgParams,
-  TypingUpdateParams,
-  SearchLocalParams,
-  GetAdvancedHistoryMsgParams,
-  FindMessageParams,
-  InsertGroupMsgParams,
-  InsertSingleMsgParams,
+  AdvancedMessageListResult,
+  SearchMessageResult,
+  CreateAdvancedQuoteMessageParams,
+  CreateAdvancedTextMessageParams,
+  CreateTextAtMessageParams,
+  CreateLocationMessageParams,
+  CreateCustomMessageParams,
+  CreateQuoteMessageParams,
+  CreateMergerMessageParams,
+  CreateFaceMessageParams,
+  SendMessageParams,
+  SearchLocalMessagesParams,
+  GetAdvancedHistoryMessageListParams,
+  FindMessageQuery,
+  InsertGroupMessageToLocalStorageParams,
+  InsertSingleMessageToLocalStorageParams,
   SetMessageLocalExParams,
-  AccessMessageParams,
-  ImageMsgParamsByURL,
-  VideoMsgParamsByURL,
-  FileMsgParamsByURL,
-  SoundMsgParamsByURL,
-  SendGroupReadReceiptParams,
-  GetGroupMessageReaderParams,
-  FetchSurroundingParams,
-} from '@openim/wasm-client-sdk/lib/types/params';
-import {
-  VideoMsgByPathParams,
-  SoundMsgByPathParams,
-  FileMsgByPathParams,
-} from '@/types/params';
+  ConversationMessageParams,
+  CreateImageMessageByURLParams,
+  CreateVideoMessageByURLParams,
+  CreateFileMessageByURLParams,
+  CreateSoundMessageByURLParams,
+} from '@openim/wasm-client-sdk';
 
-export function setupMessageModule(openIMSDK: OpenIMSDK) {
+export function setupMessageModule(openIMSdk: OpenIMSdk) {
   return {
     createTextMessage: (content: string, opid = uuidV4()) =>
-      openIMSDK.asyncRetunWrap<MessageItem>(
+      openIMSdk.asyncReturnWrap<MessageItem>(
         opid,
-        openIMSDK.libOpenIMSDK.create_text_message(opid, content)
+        openIMSdk.nativeSdk.create_text_message(opid, content)
       ),
 
-    createTextAtMessage: (params: AtMsgParams, opid = uuidV4()) =>
-      openIMSDK.asyncRetunWrap<MessageItem>(
+    createAdvancedTextMessage: (
+      params: CreateAdvancedTextMessageParams,
+      opid = uuidV4()
+    ) =>
+      openIMSdk.asyncReturnWrap<MessageItem>(
         opid,
-        openIMSDK.libOpenIMSDK.create_text_at_message(
+        openIMSdk.nativeSdk.create_advanced_text_message(
           opid,
           params.text,
-          JSON.stringify(params.atUserIDList),
-          JSON.stringify(params.atUsersInfo),
-          JSON.stringify(params.message)
+          JSON.stringify(params.messageEntityList ?? [])
         )
       ),
 
-    createLocationMessage: (params: LocationMsgParams, opid = uuidV4()) =>
-      openIMSDK.asyncRetunWrap<MessageItem>(
+    createAdvancedQuoteMessage: (
+      params: CreateAdvancedQuoteMessageParams,
+      opid = uuidV4()
+    ) =>
+      openIMSdk.asyncReturnWrap<MessageItem>(
         opid,
-        openIMSDK.libOpenIMSDK.create_location_message(
+        openIMSdk.nativeSdk.create_advanced_quote_message(
+          opid,
+          params.text,
+          JSON.stringify(params.message),
+          JSON.stringify(params.messageEntityList ?? [])
+        )
+      ),
+
+    createTextAtMessage: (params: CreateTextAtMessageParams, opid = uuidV4()) =>
+      openIMSdk.asyncReturnWrap<MessageItem>(
+        opid,
+        openIMSdk.nativeSdk.create_text_at_message(
+          opid,
+          params.text,
+          JSON.stringify(params.atUserIDList),
+          JSON.stringify(params.atUsersInfo ?? []),
+          JSON.stringify(params.message ?? {})
+        )
+      ),
+
+    createLocationMessage: (
+      params: CreateLocationMessageParams,
+      opid = uuidV4()
+    ) =>
+      openIMSdk.asyncReturnWrap<MessageItem>(
+        opid,
+        openIMSdk.nativeSdk.create_location_message(
           opid,
           params.description,
           params.longitude,
@@ -67,10 +89,10 @@ export function setupMessageModule(openIMSDK: OpenIMSDK) {
         )
       ),
 
-    createCustomMessage: (params: CustomMsgParams, opid = uuidV4()) =>
-      openIMSDK.asyncRetunWrap<MessageItem>(
+    createCustomMessage: (params: CreateCustomMessageParams, opid = uuidV4()) =>
+      openIMSdk.asyncReturnWrap<MessageItem>(
         opid,
-        openIMSDK.libOpenIMSDK.create_custom_message(
+        openIMSdk.nativeSdk.create_custom_message(
           opid,
           params.data,
           params.extension,
@@ -78,10 +100,10 @@ export function setupMessageModule(openIMSDK: OpenIMSDK) {
         )
       ),
 
-    createQuoteMessage: (params: QuoteMsgParams, opid = uuidV4()) =>
-      openIMSDK.asyncRetunWrap<MessageItem>(
+    createQuoteMessage: (params: CreateQuoteMessageParams, opid = uuidV4()) =>
+      openIMSdk.asyncReturnWrap<MessageItem>(
         opid,
-        openIMSDK.libOpenIMSDK.create_quote_message(
+        openIMSdk.nativeSdk.create_quote_message(
           opid,
           params.text,
           params.message
@@ -89,15 +111,15 @@ export function setupMessageModule(openIMSDK: OpenIMSDK) {
       ),
 
     createCardMessage: (params: CardElem, opid = uuidV4()) =>
-      openIMSDK.asyncRetunWrap<MessageItem>(
+      openIMSdk.asyncReturnWrap<MessageItem>(
         opid,
-        openIMSDK.libOpenIMSDK.create_card_message(opid, JSON.stringify(params))
+        openIMSdk.nativeSdk.create_card_message(opid, JSON.stringify(params))
       ),
 
-    createMergerMessage: (params: MergerMsgParams, opid = uuidV4()) =>
-      openIMSDK.asyncRetunWrap<MessageItem>(
+    createMergerMessage: (params: CreateMergerMessageParams, opid = uuidV4()) =>
+      openIMSdk.asyncReturnWrap<MessageItem>(
         opid,
-        openIMSDK.libOpenIMSDK.create_merger_message(
+        openIMSdk.nativeSdk.create_merger_message(
           opid,
           JSON.stringify(params.messageList),
           params.title,
@@ -105,44 +127,40 @@ export function setupMessageModule(openIMSDK: OpenIMSDK) {
         )
       ),
 
-    createFaceMessage: (params: FaceMessageParams, opid = uuidV4()) =>
-      openIMSDK.asyncRetunWrap<MessageItem>(
+    createFaceMessage: (params: CreateFaceMessageParams, opid = uuidV4()) =>
+      openIMSdk.asyncReturnWrap<MessageItem>(
         opid,
-        openIMSDK.libOpenIMSDK.create_face_message(
-          opid,
-          params.index,
-          params.data
-        )
+        openIMSdk.nativeSdk.create_face_message(opid, params.index, params.data)
       ),
 
     createForwardMessage: (message: MessageItem, opid = uuidV4()) =>
-      openIMSDK.asyncRetunWrap<MessageItem>(
+      openIMSdk.asyncReturnWrap<MessageItem>(
         opid,
-        openIMSDK.libOpenIMSDK.create_forward_message(
+        openIMSdk.nativeSdk.create_forward_message(
           opid,
           JSON.stringify(message)
         )
       ),
 
     createImageMessage: (imagePath: string, opid = uuidV4()) =>
-      openIMSDK.asyncRetunWrap<MessageItem>(
+      openIMSdk.asyncReturnWrap<MessageItem>(
         opid,
-        openIMSDK.libOpenIMSDK.create_image_message(opid, imagePath)
+        openIMSdk.nativeSdk.create_image_message(opid, imagePath)
       ),
 
     createImageMessageFromFullPath: (imagePath: string, opid = uuidV4()) =>
-      openIMSDK.asyncRetunWrap<MessageItem>(
+      openIMSdk.asyncReturnWrap<MessageItem>(
         opid,
-        openIMSDK.libOpenIMSDK.create_image_message_from_full_path(
-          opid,
-          imagePath
-        )
+        openIMSdk.nativeSdk.create_image_message_from_full_path(opid, imagePath)
       ),
 
-    createImageMessageByURL: (params: ImageMsgParamsByURL, opid = uuidV4()) =>
-      openIMSDK.asyncRetunWrap<MessageItem>(
+    createImageMessageByURL: (
+      params: CreateImageMessageByURLParams,
+      opid = uuidV4()
+    ) =>
+      openIMSdk.asyncReturnWrap<MessageItem>(
         opid,
-        openIMSDK.libOpenIMSDK.create_image_message_by_url(
+        openIMSdk.nativeSdk.create_image_message_by_url(
           opid,
           params.sourcePath,
           JSON.stringify(params.sourcePicture),
@@ -151,108 +169,124 @@ export function setupMessageModule(openIMSDK: OpenIMSDK) {
         )
       ),
 
-    createVideoMessage: (params: VideoMsgByPathParams, opid = uuidV4()) =>
-      openIMSDK.asyncRetunWrap<MessageItem>(
+    createVideoMessage: (
+      videoPath: string,
+      videoType: string,
+      duration: number,
+      snapshotPath: string,
+      opid = uuidV4()
+    ) =>
+      openIMSdk.asyncReturnWrap<MessageItem>(
         opid,
-        openIMSDK.libOpenIMSDK.create_video_message(
+        openIMSdk.nativeSdk.create_video_message(
           opid,
-          params.videoPath,
-          params.videoType,
-          params.duration,
-          params.snapshotPath
+          videoPath,
+          videoType,
+          duration,
+          snapshotPath
         )
       ),
 
     createVideoMessageFromFullPath: (
-      params: VideoMsgByPathParams,
+      videoPath: string,
+      videoType: string,
+      duration: number,
+      snapshotPath: string,
       opid = uuidV4()
     ) =>
-      openIMSDK.asyncRetunWrap<MessageItem>(
+      openIMSdk.asyncReturnWrap<MessageItem>(
         opid,
-        openIMSDK.libOpenIMSDK.create_video_message_from_full_path(
+        openIMSdk.nativeSdk.create_video_message_from_full_path(
           opid,
-          params.videoPath,
-          params.videoType,
-          params.duration,
-          params.snapshotPath
+          videoPath,
+          videoType,
+          duration,
+          snapshotPath
         )
       ),
 
-    createVideoMessageByURL: (params: VideoMsgParamsByURL, opid = uuidV4()) =>
-      openIMSDK.asyncRetunWrap<MessageItem>(
+    createVideoMessageByURL: (
+      params: CreateVideoMessageByURLParams,
+      opid = uuidV4()
+    ) =>
+      openIMSdk.asyncReturnWrap<MessageItem>(
         opid,
-        openIMSDK.libOpenIMSDK.create_video_message_by_url(
+        openIMSdk.nativeSdk.create_video_message_by_url(
           opid,
           JSON.stringify(params)
         )
       ),
 
-    createSoundMessage: (params: SoundMsgByPathParams, opid = uuidV4()) =>
-      openIMSDK.asyncRetunWrap<MessageItem>(
+    createSoundMessage: (
+      soundPath: string,
+      duration: number,
+      opid = uuidV4()
+    ) =>
+      openIMSdk.asyncReturnWrap<MessageItem>(
         opid,
-        openIMSDK.libOpenIMSDK.create_sound_message(
-          opid,
-          params.soundPath,
-          params.duration
-        )
+        openIMSdk.nativeSdk.create_sound_message(opid, soundPath, duration)
       ),
 
     createSoundMessageFromFullPath: (
-      params: SoundMsgByPathParams,
+      soundPath: string,
+      duration: number,
       opid = uuidV4()
     ) =>
-      openIMSDK.asyncRetunWrap<MessageItem>(
+      openIMSdk.asyncReturnWrap<MessageItem>(
         opid,
-        openIMSDK.libOpenIMSDK.create_sound_message_from_full_path(
+        openIMSdk.nativeSdk.create_sound_message_from_full_path(
           opid,
-          params.soundPath,
-          params.duration
+          soundPath,
+          duration
         )
       ),
 
-    createSoundMessageByURL: (params: SoundMsgParamsByURL, opid = uuidV4()) =>
-      openIMSDK.asyncRetunWrap<MessageItem>(
+    createSoundMessageByURL: (
+      params: CreateSoundMessageByURLParams,
+      opid = uuidV4()
+    ) =>
+      openIMSdk.asyncReturnWrap<MessageItem>(
         opid,
-        openIMSDK.libOpenIMSDK.create_sound_message_by_url(
+        openIMSdk.nativeSdk.create_sound_message_by_url(
           opid,
           JSON.stringify(params)
         )
       ),
 
-    createFileMessage: (params: FileMsgByPathParams, opid = uuidV4()) =>
-      openIMSDK.asyncRetunWrap<MessageItem>(
+    createFileMessage: (filePath: string, fileName: string, opid = uuidV4()) =>
+      openIMSdk.asyncReturnWrap<MessageItem>(
         opid,
-        openIMSDK.libOpenIMSDK.create_file_message(
-          opid,
-          params.filePath,
-          params.fileName
-        )
+        openIMSdk.nativeSdk.create_file_message(opid, filePath, fileName)
       ),
 
     createFileMessageFromFullPath: (
-      params: FileMsgByPathParams,
+      filePath: string,
+      fileName: string,
       opid = uuidV4()
     ) =>
-      openIMSDK.asyncRetunWrap<MessageItem>(
+      openIMSdk.asyncReturnWrap<MessageItem>(
         opid,
-        openIMSDK.libOpenIMSDK.create_file_message_from_full_path(
+        openIMSdk.nativeSdk.create_file_message_from_full_path(
           opid,
-          params.filePath,
-          params.fileName
+          filePath,
+          fileName
         )
       ),
 
-    createFileMessageByURL: (params: FileMsgParamsByURL, opid = uuidV4()) =>
-      openIMSDK.asyncRetunWrap<MessageItem>(
+    createFileMessageByURL: (
+      params: CreateFileMessageByURLParams,
+      opid = uuidV4()
+    ) =>
+      openIMSdk.asyncReturnWrap<MessageItem>(
         opid,
-        openIMSDK.libOpenIMSDK.create_file_message_by_url(
+        openIMSdk.nativeSdk.create_file_message_by_url(
           opid,
           JSON.stringify(params)
         )
       ),
 
-    sendMessage: (params: SendMsgParams, opid = uuidV4()) =>
-      new Promise<BaseResponse<MessageItem>>((resolve, reject) => {
+    sendMessage: (params: SendMessageParams, opid = uuidV4()) =>
+      new Promise<SdkResponse<MessageItem>>((resolve, reject) => {
         const offlinePushInfo = params.offlinePushInfo ?? {
           title: 'You has a new message.',
           desc: 'You has a new message.',
@@ -260,9 +294,9 @@ export function setupMessageModule(openIMSDK: OpenIMSDK) {
           iOSPushSound: '+1',
           iOSBadgeCount: true,
         };
-        openIMSDK.libOpenIMSDK.send_message(
-          openIMSDK.sendMessageCallbackWrap<MessageItem>(
-            params.message.clientMsgID,
+        openIMSdk.nativeSdk.send_message(
+          openIMSdk.sendMessageCallbackWrap<MessageItem>(
+            params.message.clientMsgID ?? '',
             resolve,
             reject
           ),
@@ -275,8 +309,8 @@ export function setupMessageModule(openIMSDK: OpenIMSDK) {
         );
       }),
 
-    sendMessageNotOss: (params: SendMsgParams, opid = uuidV4()) =>
-      new Promise<BaseResponse<MessageItem>>((resolve, reject) => {
+    sendMessageNotOss: (params: SendMessageParams, opid = uuidV4()) =>
+      new Promise<SdkResponse<MessageItem>>((resolve, reject) => {
         const offlinePushInfo = params.offlinePushInfo ?? {
           title: 'You has a new message.',
           desc: 'You has a new message.',
@@ -284,9 +318,9 @@ export function setupMessageModule(openIMSDK: OpenIMSDK) {
           iOSPushSound: '+1',
           iOSBadgeCount: true,
         };
-        openIMSDK.libOpenIMSDK.send_message_not_oss(
-          openIMSDK.sendMessageCallbackWrap<MessageItem>(
-            params.message.clientMsgID,
+        openIMSdk.nativeSdk.send_message_not_oss(
+          openIMSdk.sendMessageCallbackWrap<MessageItem>(
+            params.message.clientMsgID ?? '',
             resolve,
             reject
           ),
@@ -299,30 +333,20 @@ export function setupMessageModule(openIMSDK: OpenIMSDK) {
         );
       }),
 
-    typingStatusUpdate: (params: TypingUpdateParams, opid = uuidV4()) =>
-      new Promise<BaseResponse<void>>((resolve, reject) => {
-        openIMSDK.libOpenIMSDK.typing_status_update(
-          openIMSDK.baseCallbackWrap<void>(resolve, reject),
-          opid,
-          params.recvID,
-          params.msgTip
-        );
-      }),
-
-    revokeMessage: (params: AccessMessageParams, opid = uuidV4()) =>
-      new Promise<BaseResponse<void>>((resolve, reject) => {
-        openIMSDK.libOpenIMSDK.revoke_message(
-          openIMSDK.baseCallbackWrap<void>(resolve, reject),
+    revokeMessage: (params: ConversationMessageParams, opid = uuidV4()) =>
+      new Promise<SdkResponse<void>>((resolve, reject) => {
+        openIMSdk.nativeSdk.revoke_message(
+          openIMSdk.baseCallbackWrap<void>(resolve, reject),
           opid,
           params.conversationID,
           params.clientMsgID
         );
       }),
 
-    deleteMessage: (params: AccessMessageParams, opid = uuidV4()) =>
-      new Promise<BaseResponse<void>>((resolve, reject) => {
-        openIMSDK.libOpenIMSDK.delete_message(
-          openIMSDK.baseCallbackWrap<void>(resolve, reject),
+    deleteMessage: (params: ConversationMessageParams, opid = uuidV4()) =>
+      new Promise<SdkResponse<void>>((resolve, reject) => {
+        openIMSdk.nativeSdk.delete_message(
+          openIMSdk.baseCallbackWrap<void>(resolve, reject),
           opid,
           params.conversationID,
           params.clientMsgID
@@ -330,12 +354,12 @@ export function setupMessageModule(openIMSDK: OpenIMSDK) {
       }),
 
     deleteMessageFromLocalStorage: (
-      params: AccessMessageParams,
+      params: ConversationMessageParams,
       opid = uuidV4()
     ) =>
-      new Promise<BaseResponse<void>>((resolve, reject) => {
-        openIMSDK.libOpenIMSDK.delete_message_from_local_storage(
-          openIMSDK.baseCallbackWrap<void>(resolve, reject),
+      new Promise<SdkResponse<void>>((resolve, reject) => {
+        openIMSdk.nativeSdk.delete_message_from_local_storage(
+          openIMSdk.baseCallbackWrap<void>(resolve, reject),
           opid,
           params.conversationID,
           params.clientMsgID
@@ -343,84 +367,80 @@ export function setupMessageModule(openIMSDK: OpenIMSDK) {
       }),
 
     deleteAllMsgFromLocal: (opid = uuidV4()) =>
-      new Promise<BaseResponse<void>>((resolve, reject) => {
-        openIMSDK.libOpenIMSDK.delete_all_msg_from_local(
-          openIMSDK.baseCallbackWrap<void>(resolve, reject),
+      new Promise<SdkResponse<void>>((resolve, reject) => {
+        openIMSdk.nativeSdk.delete_all_msg_from_local(
+          openIMSdk.baseCallbackWrap<void>(resolve, reject),
           opid
         );
       }),
 
     deleteAllMsgFromLocalAndSvr: (opid = uuidV4()) =>
-      new Promise<BaseResponse<void>>((resolve, reject) => {
-        openIMSDK.libOpenIMSDK.delete_all_msg_from_local_and_svr(
-          openIMSDK.baseCallbackWrap<void>(resolve, reject),
+      new Promise<SdkResponse<void>>((resolve, reject) => {
+        openIMSdk.nativeSdk.delete_all_msg_from_local_and_svr(
+          openIMSdk.baseCallbackWrap<void>(resolve, reject),
           opid
         );
       }),
 
-    searchLocalMessages: (params: SearchLocalParams, opid = uuidV4()) =>
-      new Promise<BaseResponse<MessageItem[]>>((resolve, reject) => {
-        openIMSDK.libOpenIMSDK.search_local_messages(
-          openIMSDK.baseCallbackWrap<MessageItem[]>(resolve, reject),
+    searchLocalMessages: (params: SearchLocalMessagesParams, opid = uuidV4()) =>
+      new Promise<SdkResponse<SearchMessageResult>>((resolve, reject) => {
+        openIMSdk.nativeSdk.search_local_messages(
+          openIMSdk.baseCallbackWrap<SearchMessageResult>(resolve, reject),
           opid,
           JSON.stringify(params)
         );
       }),
 
     getAdvancedHistoryMessageList: (
-      params: GetAdvancedHistoryMsgParams,
+      params: GetAdvancedHistoryMessageListParams,
       opid = uuidV4()
     ) =>
-      new Promise<BaseResponse<AdvancedGetMessageResult>>((resolve, reject) => {
-        openIMSDK.libOpenIMSDK.get_advanced_history_message_list(
-          openIMSDK.baseCallbackWrap<AdvancedGetMessageResult>(resolve, reject),
+      new Promise<SdkResponse<AdvancedMessageListResult>>((resolve, reject) => {
+        openIMSdk.nativeSdk.get_advanced_history_message_list(
+          openIMSdk.baseCallbackWrap<AdvancedMessageListResult>(
+            resolve,
+            reject
+          ),
           opid,
           JSON.stringify(params)
         );
       }),
 
     getAdvancedHistoryMessageListReverse: (
-      params: GetAdvancedHistoryMsgParams,
+      params: GetAdvancedHistoryMessageListParams,
       opid = uuidV4()
     ) =>
-      new Promise<BaseResponse<AdvancedGetMessageResult>>((resolve, reject) => {
-        openIMSDK.libOpenIMSDK.get_advanced_history_message_list_reverse(
-          openIMSDK.baseCallbackWrap<AdvancedGetMessageResult>(resolve, reject),
+      new Promise<SdkResponse<AdvancedMessageListResult>>((resolve, reject) => {
+        openIMSdk.nativeSdk.get_advanced_history_message_list_reverse(
+          openIMSdk.baseCallbackWrap<AdvancedMessageListResult>(
+            resolve,
+            reject
+          ),
           opid,
           JSON.stringify(params)
         );
       }),
-    fetchSurroundingMessages: (
-      params: FetchSurroundingParams,
-      opid = uuidV4()
-    ) =>
-      new Promise<BaseResponse<{ messageList: MessageItem[] }>>(
-        (resolve, reject) => {
-          openIMSDK.libOpenIMSDK.fetch_surrounding_messages(
-            openIMSDK.baseCallbackWrap<{ messageList: MessageItem[] }>(
-              resolve,
-              reject
-            ),
-            opid,
-            JSON.stringify(params)
-          );
-        }
+    findMessageList: (params: FindMessageQuery[], opid = uuidV4()) =>
+      new Promise<SdkResponse<SearchMessageResult>>((resolve, reject) => {
+        openIMSdk.nativeSdk.find_message_list(
+          openIMSdk.baseCallbackWrap<SearchMessageResult>(resolve, reject),
+          opid,
+          JSON.stringify(params)
+        );
+      }),
+
+    getAtAllTag: (opid = uuidV4()) =>
+      openIMSdk.asyncReturnWrap<string>(
+        opid,
+        openIMSdk.nativeSdk.get_at_all_tag(opid)
       ),
-    findMessageList: (params: FindMessageParams[], opid = uuidV4()) =>
-      new Promise<BaseResponse<MessageItem[]>>((resolve, reject) => {
-        openIMSDK.libOpenIMSDK.find_message_list(
-          openIMSDK.baseCallbackWrap<MessageItem[]>(resolve, reject),
-          opid,
-          JSON.stringify(params)
-        );
-      }),
     insertGroupMessageToLocalStorage: (
-      params: InsertGroupMsgParams,
+      params: InsertGroupMessageToLocalStorageParams,
       opid = uuidV4()
     ) =>
-      new Promise<BaseResponse<void>>((resolve, reject) => {
-        openIMSDK.libOpenIMSDK.insert_group_message_to_local_storage(
-          openIMSDK.baseCallbackWrap<void>(resolve, reject),
+      new Promise<SdkResponse<MessageItem>>((resolve, reject) => {
+        openIMSdk.nativeSdk.insert_group_message_to_local_storage(
+          openIMSdk.baseCallbackWrap<MessageItem>(resolve, reject),
           opid,
           JSON.stringify(params.message),
           params.groupID,
@@ -428,12 +448,12 @@ export function setupMessageModule(openIMSDK: OpenIMSDK) {
         );
       }),
     insertSingleMessageToLocalStorage: (
-      params: InsertSingleMsgParams,
+      params: InsertSingleMessageToLocalStorageParams,
       opid = uuidV4()
     ) =>
-      new Promise<BaseResponse<void>>((resolve, reject) => {
-        openIMSDK.libOpenIMSDK.insert_single_message_to_local_storage(
-          openIMSDK.baseCallbackWrap<void>(resolve, reject),
+      new Promise<SdkResponse<MessageItem>>((resolve, reject) => {
+        openIMSdk.nativeSdk.insert_single_message_to_local_storage(
+          openIMSdk.baseCallbackWrap<MessageItem>(resolve, reject),
           opid,
           JSON.stringify(params.message),
           params.recvID,
@@ -441,40 +461,13 @@ export function setupMessageModule(openIMSDK: OpenIMSDK) {
         );
       }),
     setMessageLocalEx: (params: SetMessageLocalExParams, opid = uuidV4()) =>
-      new Promise<BaseResponse<void>>((resolve, reject) => {
-        openIMSDK.libOpenIMSDK.set_message_local_ex(
-          openIMSDK.baseCallbackWrap<void>(resolve, reject),
+      new Promise<SdkResponse<void>>((resolve, reject) => {
+        openIMSdk.nativeSdk.set_message_local_ex(
+          openIMSdk.baseCallbackWrap<void>(resolve, reject),
           opid,
           params.conversationID,
           params.clientMsgID,
           params.localEx
-        );
-      }),
-    sendGroupMessageReadReceipt: (
-      params: SendGroupReadReceiptParams,
-      opid = uuidV4()
-    ) =>
-      new Promise<BaseResponse<void>>((resolve, reject) => {
-        openIMSDK.libOpenIMSDK.send_group_message_read_receipt(
-          openIMSDK.baseCallbackWrap<void>(resolve, reject),
-          opid,
-          params.conversationID,
-          JSON.stringify(params.clientMsgIDList)
-        );
-      }),
-    getGroupMessageReaderList: (
-      params: GetGroupMessageReaderParams,
-      opid = uuidV4()
-    ) =>
-      new Promise<BaseResponse<string[]>>((resolve, reject) => {
-        openIMSDK.libOpenIMSDK.get_group_message_reader_list(
-          openIMSDK.baseCallbackWrap<string[]>(resolve, reject),
-          opid,
-          params.conversationID,
-          params.clientMsgID,
-          params.filter,
-          params.offset,
-          params.count
         );
       }),
   };
@@ -484,151 +477,154 @@ export interface MessageModuleApi {
   createTextMessage: (
     content: string,
     opid?: string
-  ) => Promise<BaseResponse<MessageItem>>;
+  ) => Promise<SdkResponse<MessageItem>>;
+  createAdvancedTextMessage: (
+    params: CreateAdvancedTextMessageParams,
+    opid?: string
+  ) => Promise<SdkResponse<MessageItem>>;
+  createAdvancedQuoteMessage: (
+    params: CreateAdvancedQuoteMessageParams,
+    opid?: string
+  ) => Promise<SdkResponse<MessageItem>>;
   createTextAtMessage: (
-    params: AtMsgParams,
+    params: CreateTextAtMessageParams,
     opid?: string
-  ) => Promise<BaseResponse<MessageItem>>;
+  ) => Promise<SdkResponse<MessageItem>>;
   createLocationMessage: (
-    params: LocationMsgParams,
+    params: CreateLocationMessageParams,
     opid?: string
-  ) => Promise<BaseResponse<MessageItem>>;
+  ) => Promise<SdkResponse<MessageItem>>;
   createCustomMessage: (
-    params: CustomMsgParams,
+    params: CreateCustomMessageParams,
     opid?: string
-  ) => Promise<BaseResponse<MessageItem>>;
+  ) => Promise<SdkResponse<MessageItem>>;
   createQuoteMessage: (
-    params: QuoteMsgParams,
+    params: CreateQuoteMessageParams,
     opid?: string
-  ) => Promise<BaseResponse<MessageItem>>;
+  ) => Promise<SdkResponse<MessageItem>>;
   createCardMessage: (
     params: CardElem,
     opid?: string
-  ) => Promise<BaseResponse<MessageItem>>;
+  ) => Promise<SdkResponse<MessageItem>>;
   createMergerMessage: (
-    params: MergerMsgParams,
+    params: CreateMergerMessageParams,
     opid?: string
-  ) => Promise<BaseResponse<MessageItem>>;
+  ) => Promise<SdkResponse<MessageItem>>;
   createFaceMessage: (
-    params: FaceMessageParams,
+    params: CreateFaceMessageParams,
     opid?: string
-  ) => Promise<BaseResponse<MessageItem>>;
+  ) => Promise<SdkResponse<MessageItem>>;
   createForwardMessage: (
     message: MessageItem,
     opid?: string
-  ) => Promise<BaseResponse<MessageItem>>;
+  ) => Promise<SdkResponse<MessageItem>>;
   createImageMessage: (
     imagePath: string,
     opid?: string
-  ) => Promise<BaseResponse<MessageItem>>;
+  ) => Promise<SdkResponse<MessageItem>>;
   createImageMessageFromFullPath: (
     imagePath: string,
     opid?: string
-  ) => Promise<BaseResponse<MessageItem>>;
+  ) => Promise<SdkResponse<MessageItem>>;
   createImageMessageByURL: (
-    params: ImageMsgParamsByURL,
+    params: CreateImageMessageByURLParams,
     opid?: string
-  ) => Promise<BaseResponse<MessageItem>>;
+  ) => Promise<SdkResponse<MessageItem>>;
   createVideoMessage: (
-    params: VideoMsgByPathParams,
+    videoPath: string,
+    videoType: string,
+    duration: number,
+    snapshotPath: string,
     opid?: string
-  ) => Promise<BaseResponse<MessageItem>>;
+  ) => Promise<SdkResponse<MessageItem>>;
   createVideoMessageFromFullPath: (
-    params: VideoMsgByPathParams,
+    videoPath: string,
+    videoType: string,
+    duration: number,
+    snapshotPath: string,
     opid?: string
-  ) => Promise<BaseResponse<MessageItem>>;
+  ) => Promise<SdkResponse<MessageItem>>;
   createVideoMessageByURL: (
-    params: VideoMsgParamsByURL,
+    params: CreateVideoMessageByURLParams,
     opid?: string
-  ) => Promise<BaseResponse<MessageItem>>;
+  ) => Promise<SdkResponse<MessageItem>>;
   createSoundMessage: (
-    params: SoundMsgByPathParams,
+    soundPath: string,
+    duration: number,
     opid?: string
-  ) => Promise<BaseResponse<MessageItem>>;
+  ) => Promise<SdkResponse<MessageItem>>;
   createSoundMessageFromFullPath: (
-    params: SoundMsgByPathParams,
+    soundPath: string,
+    duration: number,
     opid?: string
-  ) => Promise<BaseResponse<MessageItem>>;
+  ) => Promise<SdkResponse<MessageItem>>;
   createSoundMessageByURL: (
-    params: SoundMsgParamsByURL,
+    params: CreateSoundMessageByURLParams,
     opid?: string
-  ) => Promise<BaseResponse<MessageItem>>;
+  ) => Promise<SdkResponse<MessageItem>>;
   createFileMessage: (
-    params: FileMsgByPathParams,
+    filePath: string,
+    fileName: string,
     opid?: string
-  ) => Promise<BaseResponse<MessageItem>>;
+  ) => Promise<SdkResponse<MessageItem>>;
   createFileMessageFromFullPath: (
-    params: FileMsgByPathParams,
+    filePath: string,
+    fileName: string,
     opid?: string
-  ) => Promise<BaseResponse<MessageItem>>;
+  ) => Promise<SdkResponse<MessageItem>>;
   createFileMessageByURL: (
-    params: FileMsgParamsByURL,
+    params: CreateFileMessageByURLParams,
     opid?: string
-  ) => Promise<BaseResponse<MessageItem>>;
+  ) => Promise<SdkResponse<MessageItem>>;
   sendMessage: (
-    params: SendMsgParams,
+    params: SendMessageParams,
     opid?: string
-  ) => Promise<BaseResponse<MessageItem>>;
+  ) => Promise<SdkResponse<MessageItem>>;
   sendMessageNotOss: (
-    params: SendMsgParams,
+    params: SendMessageParams,
     opid?: string
-  ) => Promise<BaseResponse<MessageItem>>;
-  typingStatusUpdate: (
-    params: TypingUpdateParams,
-    opid?: string
-  ) => Promise<BaseResponse<void>>;
+  ) => Promise<SdkResponse<MessageItem>>;
   revokeMessage: (
-    params: AccessMessageParams,
+    params: ConversationMessageParams,
     opid?: string
-  ) => Promise<BaseResponse<void>>;
+  ) => Promise<SdkResponse<void>>;
   deleteMessage: (
-    params: AccessMessageParams,
+    params: ConversationMessageParams,
     opid?: string
-  ) => Promise<BaseResponse<void>>;
+  ) => Promise<SdkResponse<void>>;
   deleteMessageFromLocalStorage: (
-    params: AccessMessageParams,
+    params: ConversationMessageParams,
     opid?: string
-  ) => Promise<BaseResponse<void>>;
-  deleteAllMsgFromLocal: (opid?: string) => Promise<BaseResponse<void>>;
-  deleteAllMsgFromLocalAndSvr: (opid?: string) => Promise<BaseResponse<void>>;
+  ) => Promise<SdkResponse<void>>;
+  deleteAllMsgFromLocal: (opid?: string) => Promise<SdkResponse<void>>;
+  deleteAllMsgFromLocalAndSvr: (opid?: string) => Promise<SdkResponse<void>>;
   searchLocalMessages: (
-    params: SearchLocalParams,
+    params: SearchLocalMessagesParams,
     opid?: string
-  ) => Promise<BaseResponse<MessageItem[]>>;
+  ) => Promise<SdkResponse<SearchMessageResult>>;
   getAdvancedHistoryMessageList: (
-    params: GetAdvancedHistoryMsgParams,
+    params: GetAdvancedHistoryMessageListParams,
     opid?: string
-  ) => Promise<BaseResponse<AdvancedGetMessageResult>>;
+  ) => Promise<SdkResponse<AdvancedMessageListResult>>;
   getAdvancedHistoryMessageListReverse: (
-    params: GetAdvancedHistoryMsgParams,
+    params: GetAdvancedHistoryMessageListParams,
     opid?: string
-  ) => Promise<BaseResponse<AdvancedGetMessageResult>>;
-  fetchSurroundingMessages: (
-    params: FetchSurroundingParams,
-    opid?: string
-  ) => Promise<BaseResponse<{ messageList: MessageItem[] }>>;
+  ) => Promise<SdkResponse<AdvancedMessageListResult>>;
   findMessageList: (
-    params: FindMessageParams[],
+    params: FindMessageQuery[],
     opid?: string
-  ) => Promise<BaseResponse<MessageItem[]>>;
+  ) => Promise<SdkResponse<SearchMessageResult>>;
+  getAtAllTag: (opid?: string) => Promise<SdkResponse<string>>;
   insertGroupMessageToLocalStorage: (
-    params: InsertGroupMsgParams,
+    params: InsertGroupMessageToLocalStorageParams,
     opid?: string
-  ) => Promise<BaseResponse<void>>;
+  ) => Promise<SdkResponse<MessageItem>>;
   insertSingleMessageToLocalStorage: (
-    params: InsertSingleMsgParams,
+    params: InsertSingleMessageToLocalStorageParams,
     opid?: string
-  ) => Promise<BaseResponse<void>>;
+  ) => Promise<SdkResponse<MessageItem>>;
   setMessageLocalEx: (
     params: SetMessageLocalExParams,
     opid?: string
-  ) => Promise<BaseResponse<void>>;
-  sendGroupMessageReadReceipt: (
-    params: SendGroupReadReceiptParams,
-    opid?: string
-  ) => Promise<BaseResponse<void>>;
-  getGroupMessageReaderList: (
-    params: GetGroupMessageReaderParams,
-    opid?: string
-  ) => Promise<BaseResponse<string[]>>;
+  ) => Promise<SdkResponse<void>>;
 }

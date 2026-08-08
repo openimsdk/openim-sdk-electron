@@ -1,44 +1,43 @@
-import { v4 as uuidV4 } from 'uuid';
-import { BaseResponse } from '@/types/entity';
-import OpenIMSDK from '..';
+import { uuidV4 } from '@/utils/uuid';
+import { SdkResponse } from '@/types/entity';
+import OpenIMSdk from '..';
 import {
   GroupItem,
   GroupApplicationItem,
   GroupMemberItem,
-} from '@openim/wasm-client-sdk/lib/types/entity';
-import {
   CreateGroupParams,
   JoinGroupParams,
-  SearchGroupParams,
-  AccessGroupApplicationParams,
-  GetGroupMemberParams,
-  SearchGroupMemberParams,
-  UpdateMemberInfoParams,
-  GetGroupMemberByTimeParams,
+  SearchGroupsParams,
+  HandleGroupApplicationParams,
+  GetGroupMemberListParams,
+  SearchGroupMembersParams,
+  SetGroupMemberInfoParams,
+  GetGroupMemberListByJoinTimeFilterParams,
   ChangeGroupMemberMuteParams,
   ChangeGroupMuteParams,
-  TransferGroupParams,
-  AccessToGroupParams,
-  OffsetParams,
-  GetSelfUnhandledApplyCountParams,
-  GetGroupApplicationListParams,
-} from '@openim/wasm-client-sdk/lib/types/params';
+  TransferGroupOwnerParams,
+  GroupMemberOperationParams,
+  GroupMemberUserListParams,
+  PaginationParams,
+  ApplicationUnhandledCountParams,
+  GroupApplicationListParams,
+} from '@openim/wasm-client-sdk';
 
-export function setupGroupModule(openIMSDK: OpenIMSDK) {
+export function setupGroupModule(openIMSdk: OpenIMSdk) {
   return {
     createGroup: (params: CreateGroupParams, opid = uuidV4()) =>
-      new Promise<BaseResponse<GroupItem>>((resolve, reject) => {
-        openIMSDK.libOpenIMSDK.create_group(
-          openIMSDK.baseCallbackWrap<GroupItem>(resolve, reject),
+      new Promise<SdkResponse<GroupItem>>((resolve, reject) => {
+        openIMSdk.nativeSdk.create_group(
+          openIMSdk.baseCallbackWrap<GroupItem>(resolve, reject),
           opid,
           JSON.stringify(params)
         );
       }),
 
     joinGroup: (params: JoinGroupParams, opid = uuidV4()) =>
-      new Promise<BaseResponse<void>>((resolve, reject) => {
-        openIMSDK.libOpenIMSDK.join_group(
-          openIMSDK.baseCallbackWrap<void>(resolve, reject),
+      new Promise<SdkResponse<void>>((resolve, reject) => {
+        openIMSdk.nativeSdk.join_group(
+          openIMSdk.baseCallbackWrap<void>(resolve, reject),
           opid,
           params.groupID,
           params.reqMsg,
@@ -47,10 +46,10 @@ export function setupGroupModule(openIMSDK: OpenIMSDK) {
         );
       }),
 
-    inviteUserToGroup: (params: AccessToGroupParams, opid = uuidV4()) =>
-      new Promise<BaseResponse<void>>((resolve, reject) => {
-        openIMSDK.libOpenIMSDK.invite_user_to_group(
-          openIMSDK.baseCallbackWrap<void>(resolve, reject),
+    inviteUserToGroup: (params: GroupMemberOperationParams, opid = uuidV4()) =>
+      new Promise<SdkResponse<void>>((resolve, reject) => {
+        openIMSdk.nativeSdk.invite_user_to_group(
+          openIMSdk.baseCallbackWrap<void>(resolve, reject),
           opid,
           params.groupID,
           params.reason,
@@ -59,119 +58,106 @@ export function setupGroupModule(openIMSDK: OpenIMSDK) {
       }),
 
     getJoinedGroupList: (opid = uuidV4()) =>
-      new Promise<BaseResponse<GroupItem[]>>((resolve, reject) => {
-        openIMSDK.libOpenIMSDK.get_joined_group_list(
-          openIMSDK.baseCallbackWrap<GroupItem[]>(resolve, reject),
+      new Promise<SdkResponse<GroupItem[]>>((resolve, reject) => {
+        openIMSdk.nativeSdk.get_joined_group_list(
+          openIMSdk.baseCallbackWrap<GroupItem[]>(resolve, reject),
           opid
         );
       }),
 
-    getJoinedGroupListPage: (params: OffsetParams, opid = uuidV4()) =>
-      new Promise<BaseResponse<GroupItem[]>>((resolve, reject) => {
-        openIMSDK.libOpenIMSDK.get_joined_group_list_page(
-          openIMSDK.baseCallbackWrap<GroupItem[]>(resolve, reject),
+    getJoinedGroupListPage: (params: PaginationParams, opid = uuidV4()) =>
+      new Promise<SdkResponse<GroupItem[]>>((resolve, reject) => {
+        openIMSdk.nativeSdk.get_joined_group_list_page(
+          openIMSdk.baseCallbackWrap<GroupItem[]>(resolve, reject),
           opid,
           params.offset,
           params.count
         );
       }),
 
-    searchGroups: (params: SearchGroupParams, opid = uuidV4()) =>
-      new Promise<BaseResponse<GroupItem[]>>((resolve, reject) => {
-        openIMSDK.libOpenIMSDK.search_groups(
-          openIMSDK.baseCallbackWrap<GroupItem[]>(resolve, reject),
+    searchGroups: (params: SearchGroupsParams, opid = uuidV4()) =>
+      new Promise<SdkResponse<GroupItem[]>>((resolve, reject) => {
+        openIMSdk.nativeSdk.search_groups(
+          openIMSdk.baseCallbackWrap<GroupItem[]>(resolve, reject),
           opid,
           JSON.stringify(params)
         );
       }),
 
     getSpecifiedGroupsInfo: (groupIDList: string[], opid = uuidV4()) =>
-      new Promise<BaseResponse<GroupItem[]>>((resolve, reject) => {
-        openIMSDK.libOpenIMSDK.get_specified_groups_info(
-          openIMSDK.baseCallbackWrap<GroupItem[]>(resolve, reject),
+      new Promise<SdkResponse<GroupItem[]>>((resolve, reject) => {
+        openIMSdk.nativeSdk.get_specified_groups_info(
+          openIMSdk.baseCallbackWrap<GroupItem[]>(resolve, reject),
           opid,
           JSON.stringify(groupIDList)
         );
       }),
 
-    setGroupInfo: (params: Partial<GroupItem>, opid = uuidV4()) =>
-      new Promise<BaseResponse<void>>((resolve, reject) => {
-        openIMSDK.libOpenIMSDK.set_group_info(
-          openIMSDK.baseCallbackWrap<void>(resolve, reject),
+    setGroupInfo: (
+      params: Partial<GroupItem> & { groupID: string },
+      opid = uuidV4()
+    ) =>
+      new Promise<SdkResponse<void>>((resolve, reject) => {
+        openIMSdk.nativeSdk.set_group_info(
+          openIMSdk.baseCallbackWrap<void>(resolve, reject),
           opid,
           JSON.stringify(params)
         );
       }),
 
     getGroupApplicationListAsRecipient: (
-      params: GetGroupApplicationListParams = {
-        groupID: [],
+      params: GroupApplicationListParams = {
+        groupIDs: [],
         handleResults: [],
         offset: 0,
         count: 0,
       },
       opid = uuidV4()
     ) =>
-      new Promise<BaseResponse<GroupApplicationItem[]>>((resolve, reject) => {
-        openIMSDK.libOpenIMSDK.get_group_application_list_as_recipient(
-          openIMSDK.baseCallbackWrap<GroupApplicationItem[]>(resolve, reject),
+      new Promise<SdkResponse<GroupApplicationItem[]>>((resolve, reject) => {
+        openIMSdk.nativeSdk.get_group_application_list_as_recipient(
+          openIMSdk.baseCallbackWrap<GroupApplicationItem[]>(resolve, reject),
           opid,
           JSON.stringify(params)
         );
       }),
 
     getGroupApplicationListAsApplicant: (
-      params: GetGroupApplicationListParams = {
-        groupID: [],
+      params: GroupApplicationListParams = {
+        groupIDs: [],
         handleResults: [],
         offset: 0,
         count: 0,
       },
       opid = uuidV4()
     ) =>
-      new Promise<BaseResponse<GroupApplicationItem[]>>((resolve, reject) => {
-        openIMSDK.libOpenIMSDK.get_group_application_list_as_applicant(
-          openIMSDK.baseCallbackWrap<GroupApplicationItem[]>(resolve, reject),
+      new Promise<SdkResponse<GroupApplicationItem[]>>((resolve, reject) => {
+        openIMSdk.nativeSdk.get_group_application_list_as_applicant(
+          openIMSdk.baseCallbackWrap<GroupApplicationItem[]>(resolve, reject),
           opid,
           JSON.stringify(params)
         );
       }),
 
     getGroupApplicationUnhandledCount: (
-      params: GetSelfUnhandledApplyCountParams,
+      params: ApplicationUnhandledCountParams,
       opid = uuidV4()
     ) =>
-      new Promise<BaseResponse<number>>((resolve, reject) => {
-        openIMSDK.libOpenIMSDK.get_group_application_unhandled_count(
-          openIMSDK.baseCallbackWrap<number>(resolve, reject),
+      new Promise<SdkResponse<number>>((resolve, reject) => {
+        openIMSdk.nativeSdk.get_group_application_unhandled_count(
+          openIMSdk.baseCallbackWrap<number>(resolve, reject),
           opid,
           JSON.stringify(params)
         );
       }),
 
-    getGroupApplicationBadgeCount: (opid = uuidV4()) =>
-      new Promise<BaseResponse<number>>((resolve, reject) => {
-        openIMSDK.libOpenIMSDK.get_group_application_badge_count(
-          openIMSDK.baseCallbackWrap<number>(resolve, reject),
-          opid
-        );
-      }),
-
-    clearGroupApplicationBadgeCount: (opid = uuidV4()) =>
-      new Promise<BaseResponse<void>>((resolve, reject) => {
-        openIMSDK.libOpenIMSDK.clear_group_application_badge_count(
-          openIMSDK.baseCallbackWrap<void>(resolve, reject),
-          opid
-        );
-      }),
-
     acceptGroupApplication: (
-      params: AccessGroupApplicationParams,
+      params: HandleGroupApplicationParams,
       opid = uuidV4()
     ) =>
-      new Promise<BaseResponse<void>>((resolve, reject) => {
-        openIMSDK.libOpenIMSDK.accept_group_application(
-          openIMSDK.baseCallbackWrap<void>(resolve, reject),
+      new Promise<SdkResponse<void>>((resolve, reject) => {
+        openIMSdk.nativeSdk.accept_group_application(
+          openIMSdk.baseCallbackWrap<void>(resolve, reject),
           opid,
           params.groupID,
           params.fromUserID,
@@ -180,12 +166,12 @@ export function setupGroupModule(openIMSDK: OpenIMSDK) {
       }),
 
     refuseGroupApplication: (
-      params: AccessGroupApplicationParams,
+      params: HandleGroupApplicationParams,
       opid = uuidV4()
     ) =>
-      new Promise<BaseResponse<void>>((resolve, reject) => {
-        openIMSDK.libOpenIMSDK.refuse_group_application(
-          openIMSDK.baseCallbackWrap<void>(resolve, reject),
+      new Promise<SdkResponse<void>>((resolve, reject) => {
+        openIMSdk.nativeSdk.refuse_group_application(
+          openIMSdk.baseCallbackWrap<void>(resolve, reject),
           opid,
           params.groupID,
           params.fromUserID,
@@ -193,10 +179,10 @@ export function setupGroupModule(openIMSDK: OpenIMSDK) {
         );
       }),
 
-    getGroupMemberList: (params: GetGroupMemberParams, opid = uuidV4()) =>
-      new Promise<BaseResponse<GroupMemberItem[]>>((resolve, reject) => {
-        openIMSDK.libOpenIMSDK.get_group_member_list(
-          openIMSDK.baseCallbackWrap<GroupMemberItem[]>(resolve, reject),
+    getGroupMemberList: (params: GetGroupMemberListParams, opid = uuidV4()) =>
+      new Promise<SdkResponse<GroupMemberItem[]>>((resolve, reject) => {
+        openIMSdk.nativeSdk.get_group_member_list(
+          openIMSdk.baseCallbackWrap<GroupMemberItem[]>(resolve, reject),
           opid,
           params.groupID,
           params.filter,
@@ -206,52 +192,52 @@ export function setupGroupModule(openIMSDK: OpenIMSDK) {
       }),
 
     getSpecifiedGroupMembersInfo: (
-      params: Omit<AccessToGroupParams, 'reason'>,
+      params: GroupMemberUserListParams,
       opid = uuidV4()
     ) =>
-      new Promise<BaseResponse<GroupMemberItem[]>>((resolve, reject) => {
-        openIMSDK.libOpenIMSDK.get_specified_group_members_info(
-          openIMSDK.baseCallbackWrap<GroupMemberItem[]>(resolve, reject),
+      new Promise<SdkResponse<GroupMemberItem[]>>((resolve, reject) => {
+        openIMSdk.nativeSdk.get_specified_group_members_info(
+          openIMSdk.baseCallbackWrap<GroupMemberItem[]>(resolve, reject),
           opid,
           params.groupID,
           JSON.stringify(params.userIDList)
         );
       }),
 
-    searchGroupMembers: (params: SearchGroupMemberParams, opid = uuidV4()) =>
-      new Promise<BaseResponse<GroupMemberItem[]>>((resolve, reject) => {
-        openIMSDK.libOpenIMSDK.search_group_members(
-          openIMSDK.baseCallbackWrap<GroupMemberItem[]>(resolve, reject),
+    searchGroupMembers: (params: SearchGroupMembersParams, opid = uuidV4()) =>
+      new Promise<SdkResponse<GroupMemberItem[]>>((resolve, reject) => {
+        openIMSdk.nativeSdk.search_group_members(
+          openIMSdk.baseCallbackWrap<GroupMemberItem[]>(resolve, reject),
           opid,
           JSON.stringify(params)
         );
       }),
 
-    setGroupMemberInfo: (params: UpdateMemberInfoParams, opid = uuidV4()) =>
-      new Promise<BaseResponse<void>>((resolve, reject) => {
-        openIMSDK.libOpenIMSDK.set_group_member_info(
-          openIMSDK.baseCallbackWrap<void>(resolve, reject),
+    setGroupMemberInfo: (params: SetGroupMemberInfoParams, opid = uuidV4()) =>
+      new Promise<SdkResponse<void>>((resolve, reject) => {
+        openIMSdk.nativeSdk.set_group_member_info(
+          openIMSdk.baseCallbackWrap<void>(resolve, reject),
           opid,
           JSON.stringify(params)
         );
       }),
 
     getGroupMemberOwnerAndAdmin: (groupID: string, opid = uuidV4()) =>
-      new Promise<BaseResponse<GroupMemberItem[]>>((resolve, reject) => {
-        openIMSDK.libOpenIMSDK.get_group_member_owner_and_admin(
-          openIMSDK.baseCallbackWrap<GroupMemberItem[]>(resolve, reject),
+      new Promise<SdkResponse<GroupMemberItem[]>>((resolve, reject) => {
+        openIMSdk.nativeSdk.get_group_member_owner_and_admin(
+          openIMSdk.baseCallbackWrap<GroupMemberItem[]>(resolve, reject),
           opid,
           groupID
         );
       }),
 
     getGroupMemberListByJoinTimeFilter: (
-      params: GetGroupMemberByTimeParams,
+      params: GetGroupMemberListByJoinTimeFilterParams,
       opid = uuidV4()
     ) =>
-      new Promise<BaseResponse<GroupMemberItem[]>>((resolve, reject) => {
-        openIMSDK.libOpenIMSDK.get_group_member_list_by_join_time_filter(
-          openIMSDK.baseCallbackWrap<GroupMemberItem[]>(resolve, reject),
+      new Promise<SdkResponse<GroupMemberItem[]>>((resolve, reject) => {
+        openIMSdk.nativeSdk.get_group_member_list_by_join_time_filter(
+          openIMSdk.baseCallbackWrap<GroupMemberItem[]>(resolve, reject),
           opid,
           params.groupID,
           params.offset,
@@ -262,10 +248,10 @@ export function setupGroupModule(openIMSDK: OpenIMSDK) {
         );
       }),
 
-    kickGroupMember: (params: AccessToGroupParams, opid = uuidV4()) =>
-      new Promise<BaseResponse<void>>((resolve, reject) => {
-        openIMSDK.libOpenIMSDK.kick_group_member(
-          openIMSDK.baseCallbackWrap<void>(resolve, reject),
+    kickGroupMember: (params: GroupMemberOperationParams, opid = uuidV4()) =>
+      new Promise<SdkResponse<void>>((resolve, reject) => {
+        openIMSdk.nativeSdk.kick_group_member(
+          openIMSdk.baseCallbackWrap<void>(resolve, reject),
           opid,
           params.groupID,
           params.reason,
@@ -277,9 +263,9 @@ export function setupGroupModule(openIMSDK: OpenIMSDK) {
       params: ChangeGroupMemberMuteParams,
       opid = uuidV4()
     ) =>
-      new Promise<BaseResponse<void>>((resolve, reject) => {
-        openIMSDK.libOpenIMSDK.change_group_member_mute(
-          openIMSDK.baseCallbackWrap<void>(resolve, reject),
+      new Promise<SdkResponse<void>>((resolve, reject) => {
+        openIMSdk.nativeSdk.change_group_member_mute(
+          openIMSdk.baseCallbackWrap<void>(resolve, reject),
           opid,
           params.groupID,
           params.userID,
@@ -288,19 +274,19 @@ export function setupGroupModule(openIMSDK: OpenIMSDK) {
       }),
 
     changeGroupMute: (params: ChangeGroupMuteParams, opid = uuidV4()) =>
-      new Promise<BaseResponse<void>>((resolve, reject) => {
-        openIMSDK.libOpenIMSDK.change_group_mute(
-          openIMSDK.baseCallbackWrap<void>(resolve, reject),
+      new Promise<SdkResponse<void>>((resolve, reject) => {
+        openIMSdk.nativeSdk.change_group_mute(
+          openIMSdk.baseCallbackWrap<void>(resolve, reject),
           opid,
           params.groupID,
           params.isMute ? 1 : 0
         );
       }),
 
-    transferGroupOwner: (params: TransferGroupParams, opid = uuidV4()) =>
-      new Promise<BaseResponse<void>>((resolve, reject) => {
-        openIMSDK.libOpenIMSDK.transfer_group_owner(
-          openIMSDK.baseCallbackWrap<void>(resolve, reject),
+    transferGroupOwner: (params: TransferGroupOwnerParams, opid = uuidV4()) =>
+      new Promise<SdkResponse<void>>((resolve, reject) => {
+        openIMSdk.nativeSdk.transfer_group_owner(
+          openIMSdk.baseCallbackWrap<void>(resolve, reject),
           opid,
           params.groupID,
           params.newOwnerUserID
@@ -308,38 +294,35 @@ export function setupGroupModule(openIMSDK: OpenIMSDK) {
       }),
 
     dismissGroup: (groupID: string, opid = uuidV4()) =>
-      new Promise<BaseResponse<void>>((resolve, reject) => {
-        openIMSDK.libOpenIMSDK.dismiss_group(
-          openIMSDK.baseCallbackWrap<void>(resolve, reject),
+      new Promise<SdkResponse<void>>((resolve, reject) => {
+        openIMSdk.nativeSdk.dismiss_group(
+          openIMSdk.baseCallbackWrap<void>(resolve, reject),
           opid,
           groupID
         );
       }),
 
     quitGroup: (groupID: string, opid = uuidV4()) =>
-      new Promise<BaseResponse<void>>((resolve, reject) => {
-        openIMSDK.libOpenIMSDK.quit_group(
-          openIMSDK.baseCallbackWrap<void>(resolve, reject),
+      new Promise<SdkResponse<void>>((resolve, reject) => {
+        openIMSdk.nativeSdk.quit_group(
+          openIMSdk.baseCallbackWrap<void>(resolve, reject),
           opid,
           groupID
         );
       }),
 
     isJoinGroup: (groupID: string, opid = uuidV4()) =>
-      new Promise<BaseResponse<void>>((resolve, reject) => {
-        openIMSDK.libOpenIMSDK.is_join_group(
-          openIMSDK.baseCallbackWrap<void>(resolve, reject),
+      new Promise<SdkResponse<boolean>>((resolve, reject) => {
+        openIMSdk.nativeSdk.is_join_group(
+          openIMSdk.baseCallbackWrap<boolean>(resolve, reject),
           opid,
           groupID
         );
       }),
-    getUsersInGroup: (
-      params: Omit<AccessToGroupParams, 'reason'>,
-      opid = uuidV4()
-    ) =>
-      new Promise<BaseResponse<void>>((resolve, reject) => {
-        openIMSDK.libOpenIMSDK.get_users_in_group(
-          openIMSDK.baseCallbackWrap<void>(resolve, reject),
+    getUsersInGroup: (params: GroupMemberUserListParams, opid = uuidV4()) =>
+      new Promise<SdkResponse<string[]>>((resolve, reject) => {
+        openIMSdk.nativeSdk.get_users_in_group(
+          openIMSdk.baseCallbackWrap<string[]>(resolve, reject),
           opid,
           params.groupID,
           JSON.stringify(params.userIDList)
@@ -352,103 +335,100 @@ export interface GroupModuleApi {
   createGroup: (
     params: CreateGroupParams,
     opid?: string
-  ) => Promise<BaseResponse<GroupItem>>;
+  ) => Promise<SdkResponse<GroupItem>>;
   joinGroup: (
     params: JoinGroupParams,
     opid?: string
-  ) => Promise<BaseResponse<void>>;
+  ) => Promise<SdkResponse<void>>;
   inviteUserToGroup: (
-    params: AccessToGroupParams,
+    params: GroupMemberOperationParams,
     opid?: string
-  ) => Promise<BaseResponse<void>>;
-  getJoinedGroupList: (opid?: string) => Promise<BaseResponse<GroupItem[]>>;
+  ) => Promise<SdkResponse<void>>;
+  getJoinedGroupList: (opid?: string) => Promise<SdkResponse<GroupItem[]>>;
   getJoinedGroupListPage: (
-    params: OffsetParams,
+    params: PaginationParams,
     opid?: string
-  ) => Promise<BaseResponse<GroupItem[]>>;
+  ) => Promise<SdkResponse<GroupItem[]>>;
   searchGroups: (
-    params: SearchGroupParams,
+    params: SearchGroupsParams,
     opid?: string
-  ) => Promise<BaseResponse<GroupItem[]>>;
+  ) => Promise<SdkResponse<GroupItem[]>>;
   getSpecifiedGroupsInfo: (
     groupIDList: string[],
     opid?: string
-  ) => Promise<BaseResponse<GroupItem[]>>;
+  ) => Promise<SdkResponse<GroupItem[]>>;
   setGroupInfo: (
-    params: Partial<GroupItem>,
+    params: Partial<GroupItem> & { groupID: string },
     opid?: string
-  ) => Promise<BaseResponse<void>>;
+  ) => Promise<SdkResponse<void>>;
   getGroupApplicationListAsRecipient: (
-    params: GetGroupApplicationListParams,
+    params?: GroupApplicationListParams,
     opid?: string
-  ) => Promise<BaseResponse<GroupApplicationItem[]>>;
+  ) => Promise<SdkResponse<GroupApplicationItem[]>>;
   getGroupApplicationListAsApplicant: (
-    params: GetGroupApplicationListParams,
+    params?: GroupApplicationListParams,
     opid?: string
-  ) => Promise<BaseResponse<GroupApplicationItem[]>>;
+  ) => Promise<SdkResponse<GroupApplicationItem[]>>;
   getGroupApplicationUnhandledCount: (
-    params: GetSelfUnhandledApplyCountParams,
+    params: ApplicationUnhandledCountParams,
     opid?: string
-  ) => Promise<BaseResponse<number>>;
-  getGroupApplicationBadgeCount: (
-    opid?: string
-  ) => Promise<BaseResponse<number>>;
-  clearGroupApplicationBadgeCount: (
-    opid?: string
-  ) => Promise<BaseResponse<void>>;
+  ) => Promise<SdkResponse<number>>;
   acceptGroupApplication: (
-    params: AccessGroupApplicationParams,
+    params: HandleGroupApplicationParams,
     opid?: string
-  ) => Promise<BaseResponse<void>>;
+  ) => Promise<SdkResponse<void>>;
   refuseGroupApplication: (
-    params: AccessGroupApplicationParams,
+    params: HandleGroupApplicationParams,
     opid?: string
-  ) => Promise<BaseResponse<void>>;
+  ) => Promise<SdkResponse<void>>;
   getGroupMemberList: (
-    params: GetGroupMemberParams,
+    params: GetGroupMemberListParams,
     opid?: string
-  ) => Promise<BaseResponse<GroupMemberItem[]>>;
+  ) => Promise<SdkResponse<GroupMemberItem[]>>;
   getSpecifiedGroupMembersInfo: (
-    params: Omit<AccessToGroupParams, 'reason'>,
+    params: GroupMemberUserListParams,
     opid?: string
-  ) => Promise<BaseResponse<GroupMemberItem[]>>;
+  ) => Promise<SdkResponse<GroupMemberItem[]>>;
   searchGroupMembers: (
-    params: SearchGroupMemberParams,
+    params: SearchGroupMembersParams,
     opid?: string
-  ) => Promise<BaseResponse<GroupMemberItem[]>>;
+  ) => Promise<SdkResponse<GroupMemberItem[]>>;
   setGroupMemberInfo: (
-    params: UpdateMemberInfoParams,
+    params: SetGroupMemberInfoParams,
     opid?: string
-  ) => Promise<BaseResponse<void>>;
+  ) => Promise<SdkResponse<void>>;
   getGroupMemberOwnerAndAdmin: (
     groupID: string,
     opid?: string
-  ) => Promise<BaseResponse<GroupMemberItem[]>>;
+  ) => Promise<SdkResponse<GroupMemberItem[]>>;
   getGroupMemberListByJoinTimeFilter: (
-    params: GetGroupMemberByTimeParams,
+    params: GetGroupMemberListByJoinTimeFilterParams,
     opid?: string
-  ) => Promise<BaseResponse<GroupMemberItem[]>>;
+  ) => Promise<SdkResponse<GroupMemberItem[]>>;
   kickGroupMember: (
-    params: AccessToGroupParams,
+    params: GroupMemberOperationParams,
     opid?: string
-  ) => Promise<BaseResponse<void>>;
+  ) => Promise<SdkResponse<void>>;
   changeGroupMemberMute: (
     params: ChangeGroupMemberMuteParams,
     opid?: string
-  ) => Promise<BaseResponse<void>>;
+  ) => Promise<SdkResponse<void>>;
   changeGroupMute: (
     params: ChangeGroupMuteParams,
     opid?: string
-  ) => Promise<BaseResponse<void>>;
+  ) => Promise<SdkResponse<void>>;
   transferGroupOwner: (
-    params: TransferGroupParams,
+    params: TransferGroupOwnerParams,
     opid?: string
-  ) => Promise<BaseResponse<void>>;
-  dismissGroup: (groupID: string, opid?: string) => Promise<BaseResponse<void>>;
-  quitGroup: (groupID: string, opid?: string) => Promise<BaseResponse<void>>;
-  isJoinGroup: (groupID: string, opid?: string) => Promise<BaseResponse<void>>;
+  ) => Promise<SdkResponse<void>>;
+  dismissGroup: (groupID: string, opid?: string) => Promise<SdkResponse<void>>;
+  quitGroup: (groupID: string, opid?: string) => Promise<SdkResponse<void>>;
+  isJoinGroup: (
+    groupID: string,
+    opid?: string
+  ) => Promise<SdkResponse<boolean>>;
   getUsersInGroup: (
-    params: Omit<AccessToGroupParams, 'reason'>,
+    params: GroupMemberUserListParams,
     opid?: string
-  ) => Promise<BaseResponse<void>>;
+  ) => Promise<SdkResponse<string[]>>;
 }

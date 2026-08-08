@@ -1,4 +1,4 @@
-import { CbEvents } from '@openim/wasm-client-sdk';
+import { SdkEvent } from '@openim/wasm-client-sdk';
 
 interface Events {
   [key: string]: Cbfn[];
@@ -13,7 +13,7 @@ class Emitter {
     this.events = {};
   }
 
-  emit(event: CbEvents, data: unknown) {
+  emit(event: SdkEvent, data: unknown) {
     if (this.events[event]) {
       this.events[event].forEach(fn => {
         return fn(data);
@@ -23,7 +23,7 @@ class Emitter {
     return this;
   }
 
-  on(event: CbEvents, fn: Cbfn) {
+  on(event: SdkEvent, fn: Cbfn) {
     if (this.events[event]) {
       this.events[event].push(fn);
     } else {
@@ -33,7 +33,7 @@ class Emitter {
     return this;
   }
 
-  off(event: CbEvents, fn: Cbfn) {
+  off(event: SdkEvent, fn: Cbfn) {
     if (event && typeof fn === 'function' && this.events[event]) {
       const listeners = this.events[event];
       if (!listeners || listeners.length === 0) {
