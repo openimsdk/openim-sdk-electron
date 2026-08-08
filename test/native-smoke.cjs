@@ -11,15 +11,15 @@ const libraryPath = path.resolve(libraryArgument);
 
 app
   .whenReady()
-  .then(async () => {
+  .then(() => {
     const exported = require('../lib/index.js');
     const OpenIMSdkMain = exported.default ?? exported;
     const sdk = new OpenIMSdkMain(libraryPath);
     sdk.dispose();
     console.log(`[electron-native-smoke] loaded ${libraryPath}`);
-    await app.quit();
+    process.reallyExit(0);
   })
   .catch(error => {
     console.error(error);
-    app.exit(1);
+    process.reallyExit(1);
   });

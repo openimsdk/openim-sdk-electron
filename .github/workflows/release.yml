@@ -203,6 +203,7 @@ jobs:
         run: npm run test:render-surface
 
       - name: Smoke-test the Linux native library in Electron
+        timeout-minutes: 2
         run: xvfb-run -a npm run test:native-smoke -- assets/linux_x64/libopenimsdk.so
 
       - name: Verify packed package
